@@ -238,6 +238,9 @@ export function getMiniWebAppHtml(): string {
           if (data.type === 'NEW_MESSAGE' && data.message) {
             appendMessage(data.message.agentName || 'AGI Agent', data.message.content);
           }
+          if (data.type === 'INITIAL_MESSAGES' && Array.isArray(data.messages)) {
+            data.messages.forEach(m => appendMessage(m.agentName || 'AGI Agent', m.content));
+          }
         } catch (e) {}
       };
     }
