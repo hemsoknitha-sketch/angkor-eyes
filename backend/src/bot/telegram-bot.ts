@@ -200,11 +200,30 @@ export class TelegramBotEngine {
       );
 
       try {
-        const result = await InterMinisterialDebateEngine.deliberateOnTopic({
+        await InterMinisterialDebateEngine.deliberateOnTopic({
           topic: query,
-          initiatedBy: ctx.from?.first_name || 'Super Admin'
+          initiatedBy: ctx.from?.first_name || 'Super Admin',
+          onStatement: async (stmt, isFinalReport) => {
+            if (isFinalReport) {
+              const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+              const kb = new InlineKeyboard();
+              if (liveUrl && liveUrl.startsWith('https://')) {
+                kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+              }
+              kb.text('🔥 ប្រធានបទក្តៅផ្សេងទៀត', 'menu_debate')
+                .row()
+                .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+              await ctx.reply(stmt.statement, {
+                parse_mode: 'Markdown',
+                reply_markup: kb
+              });
+            } else {
+              const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+              await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+            }
+          }
         });
-        await ctx.reply(result.formattedTelegramDigest, { parse_mode: 'Markdown' });
       } catch (err: any) {
         await ctx.reply(`⚠️ កំហុសក្នុងដំណើរការប្រជុំ: ${err.message}`);
       }
@@ -778,11 +797,30 @@ export class TelegramBotEngine {
         const topic = topicMap[topicKey] || 'វិធានការសន្តិសុខ និងសេវាសាធារណៈជូនប្រជាពលរដ្ឋ';
         await ctx.answerCallbackQuery({ text: 'កំពុងកោះប្រជុំបន្ទាន់ AGI...' });
         await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI អន្តរក្រសួង...**\nប្រធានបទ ៖ «*${topic}*»\n*កំពុងស្រង់មាត្រាច្បាប់ និងសម្របសម្រួលចម្លើយ...*`, { parse_mode: 'Markdown' });
-        const res = await InterMinisterialDebateEngine.deliberateOnTopic({
+        await InterMinisterialDebateEngine.deliberateOnTopic({
           topic,
-          initiatedBy: ctx.from?.first_name || 'Super Admin'
+          initiatedBy: ctx.from?.first_name || 'Super Admin',
+          onStatement: async (stmt, isFinalReport) => {
+            if (isFinalReport) {
+              const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+              const kb = new InlineKeyboard();
+              if (liveUrl && liveUrl.startsWith('https://')) {
+                kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+              }
+              kb.text('🔥 ប្រធានបទក្តៅផ្សេងទៀត', 'menu_debate')
+                .row()
+                .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+              await ctx.reply(stmt.statement, {
+                parse_mode: 'Markdown',
+                reply_markup: kb
+              });
+            } else {
+              const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+              await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+            }
+          }
         });
-        await ctx.reply(res.formattedTelegramDigest, { parse_mode: 'Markdown' });
         return;
       }
 
