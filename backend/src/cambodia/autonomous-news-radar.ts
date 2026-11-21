@@ -14,13 +14,26 @@ export class AutonomousNewsRadarEngine {
   private static liveChatSubscribers: Set<number> = new Set();
 
   private static fallbackTopics: string[] = [
-    'វិធានការទប់ស្កាត់ការឆបោកតាមប្រព័ន្ធអនឡាញ និងល្បែងស៊ីសងខុសច្បាប់',
-    'នីតិវិធីចុះបញ្ជីក្បាលដី និងការដោះស្រាយវិវាទដីធ្លីក្រៅប្រព័ន្ធតុលាការ',
-    'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក និងការត្រួតពិនិត្យជាតិស្រវឹងពេលយប់',
-    'ការទប់ស្កាត់អំពើពុករលួយ និងការទារកម្រៃក្រៅផ្លូវការនៅច្រកចេញចូលតែមួយ (OWSO)',
-    'កំណែទម្រង់ប្រព័ន្ធពន្ធដារឌីជីថល និងការលើកទឹកចិត្តសហគ្រាសធុនតូចនិងមធ្យម (SME)',
-    'ការបង្ក្រាបការជួញដូរគ្រឿងញៀន និងការពង្រឹងសន្តិសុខភូមិ-ឃុំមានសុវត្ថិភាព',
-    'ការការពារសិទ្ធិ និងផលប្រយោជន៍ស្របច្បាប់របស់កម្មករ-និយោជិតតាមរោងចក្រ'
+    'ការការពារសិទ្ធិ និងផលប្រយោជន៍ស្របច្បាប់របស់កម្មករ-និយោជិតតាមរោងចក្រ និងការអនុវត្តប្រាក់ឈ្នួលអប្បបរមា',
+    'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក ការត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ និងការកាត់ពិន្ទុបណ្ណបើកបរ',
+    'នីតិវិធីចុះបញ្ជីក្បាលដីមានលក្ខណៈជាប្រព័ន្ធ និងការដោះស្រាយវិវាទដីធ្លីក្រៅប្រព័ន្ធតុលាការ',
+    'វិធានការទប់ស្កាត់ការឆបោកតាមប្រព័ន្ធអនឡាញ ល្បែងស៊ីសង និងការបង្កកគណនីលាងលុយកខ្វក់',
+    'ការទប់ស្កាត់អំពើពុករលួយ និងការទារកម្រៃក្រៅផ្លូវការនៅការិយាល័យច្រកចេញចូលតែមួយ (OWSO)',
+    'កំណែទម្រង់ប្រព័ន្ធពន្ធដារឌីជីថល ការលើកទឹកចិត្តពន្ធដារដល់សហគ្រាសធុនតូច-មធ្យម (SME) និង Startups',
+    'វិធានការរក្សាស្ថិរភាពតម្លៃស្រូវ កសិផល និងការត្រួតពិនិត្យគុណភាពជីកសិកម្មជូនប្រជាកសិករ',
+    'ការពង្រីករបបសន្តិសុខសង្គម (ប.ស.ស.) ជូនអ្នកប្រកបរបរក្រៅប្រព័ន្ធ និងការទប់ស្កាត់ឱសថក្លែងក្លាយ',
+    'ការបង្ក្រាបបទល្មើសធនធានធម្មជាតិ ការទន្ទ្រានដីព្រៃអភិរក្ស និងការគ្រប់គ្រងកាកសំណល់ប្លាស្ទិក',
+    'យុទ្ធសាស្ត្រស្តារវិស័យទេសចរណ៍ សម្រួលទិដ្ឋាការ និងការគ្រប់គ្រងរមណីយដ្ឋានប្រវត្តិសាស្ត្រអង្គរ',
+    'ការបញ្ចុះតម្លៃអគ្គិសនីបម្រើឱ្យវិស័យកសិកម្ម និងការជំរុញការប្រើប្រាស់ថាមពលកកើតឡើងវិញ',
+    'កំណែទម្រង់មុខងារសាធារណៈ ការប្រឡងជ្រើសរើសមន្ត្រីរាជការដោយតម្លាភាព និងការលុបបំបាត់មន្ត្រីខ្មោច',
+    'ការលើកកម្ពស់គុណភាពអប់រំ បណ្តុះបណ្តាលជំនាញបច្ចេកទេស STEM និងអនាម័យតាមសាលារៀន',
+    'វិធានការដោះស្រាយការកកស្ទះចរាចរណ៍ និងការស្តារប្រព័ន្ធលូរំដោះទឹកជំនន់ក្នុងរាជធានីភ្នំពេញ',
+    'ការរឹតបន្តឹងការដឹកជញ្ជូនលើសទម្ងន់កម្រិតកំណត់ និងការថែទាំគុណភាពផ្លូវជាតិ',
+    'វិធានការបង្ក្រាបការជួញដូរគ្រឿងញៀន និងការពង្រឹងគោលនយោបាយភូមិ-ឃុំ-សង្កាត់មានសុវត្ថិភាព',
+    'ការទប់ស្កាត់ព័ត៌មានមិនពិត (Fake News) ការពារសន្តិសុខឌីជីថល និងសីលធម៌សារព័ត៌មាន',
+    'ការផ្តល់ប្រាក់ឧបត្ថម្ភគាំពារសង្គមជូនជនមានពិការភាព ជនចាស់ជរា និងគ្រួសារងាយរងគ្រោះ',
+    'ការអភិវឌ្ឍប្រព័ន្ធស្រោចស្រព ទំនប់អាងទឹក និងការត្រៀមកម្លាំងអន្តរាគមន៍គ្រោះរាំងស្ងួត',
+    'ការគ្រប់គ្រងសណ្តាប់ធ្នាប់ឆ្នេរសមុទ្រ និងការពង្រឹងសន្តិសុខទេសចរណ៍នៅខេត្តព្រះសីហនុ'
   ];
 
   /**
@@ -172,32 +185,31 @@ export class AutonomousNewsRadarEngine {
 
       console.log(`[AutonomousNewsRadar] 🔥 Auto-Debate cycle triggered: "${targetTopic}"`);
 
-      // Convene inter-ministerial debate across 78 AGI agents (streams to Mini Web automatically via WebSockets!)
+      // Convene inter-ministerial debate across 78 AGI agents with ONE-BY-ONE live streaming to Bot Chat & Mini Web!
       const result = await InterMinisterialDebateEngine.deliberateOnTopic({
         topic: targetTopic,
-        initiatedBy: '📡 រ៉ាដាព័ត៌មានជាតិស្វ័យប្រវត្តិ ២៤/៧ (Autonomous National Radar)'
+        initiatedBy: '📡 រ៉ាដាព័ត៌មានជាតិស្វ័យប្រវត្តិ ២៤/៧ (Autonomous National Radar)',
+        onStatement: async (stmt, isFinalReport) => {
+          if (isFinalReport) {
+            const webUrl = TelegramBotEngine.getLiveWebAppUrl();
+            const kb = new InlineKeyboard();
+            if (webUrl && webUrl.startsWith('https://')) {
+              kb.webApp('🌐 បើក Sovereign Mini Web', webUrl).row();
+            }
+            kb.text('⚡ កោះប្រជុំបន្ទាប់ភ្លាមៗ', 'auto_debate:now')
+              .row()
+              .text('🔄 កំណត់ Auto Debate', 'auto_debate:status');
+
+            await TelegramBotEngine.broadcastToUsers(stmt.statement, kb);
+          } else {
+            const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+            const speakerText = `💬 ${cmd}\n${stmt.statement}`;
+            await TelegramBotEngine.broadcastToUsers(speakerText);
+          }
+        }
       });
 
-      // Construct Telegram Broadcast Notification with live Mini Web button
-      const webUrl = TelegramBotEngine.getLiveWebAppUrl();
-      const kb = new InlineKeyboard();
-      if (webUrl && webUrl.startsWith('https://')) {
-        kb.webApp('🌐 មើលការជជែក Live លើ Mini Web', webUrl).row();
-      }
-      kb.text('⚡ កោះប្រជុំភ្លាមៗ', 'auto_debate:now')
-        .row()
-        .text('🔄 កំណត់ Auto Debate', 'auto_debate:status');
-
-      const broadcastMsg = `📡 **[AUTO DEBATE ២៤/៧] — កិច្ចប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន**\n\n` +
-        `🔥 **ប្រធានបទក្តៅ** ៖ «${result.topic}»\n` +
-        `📅 **កាលបរិច្ឆេទ** ៖ ${result.dateKhmer}\n` +
-        `📑 **លេខកូដរដ្ឋបាល** ៖ \`${result.referenceCode}\`\n\n` +
-        `🏛️ **ស្ថាប័នចូលរួមជជែក** ៖ ${result.participatingAgents.join(', ')}\n\n` +
-        result.jointResolution;
-
-      await TelegramBotEngine.broadcastToUsers(broadcastMsg, kb);
-      console.log(`[AutonomousNewsRadar] ✅ Auto-Debate completed & broadcasted successfully.`);
-
+      console.log(`[AutonomousNewsRadar] ✅ Auto-Debate completed & streamed successfully.`);
       return result;
     } finally {
       this.isScanning = false;

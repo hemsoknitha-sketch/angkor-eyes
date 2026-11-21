@@ -1372,6 +1372,16 @@ export class TelegramBotEngine {
       chatIds.add(id);
     }
 
+    try {
+      const { AutonomousNewsRadarEngine } = await import('../cambodia/autonomous-news-radar.js');
+      const subscribers = (AutonomousNewsRadarEngine as any).liveChatSubscribers;
+      if (subscribers && subscribers instanceof Set) {
+        for (const sid of subscribers) {
+          chatIds.add(sid);
+        }
+      }
+    } catch {}
+
     for (const chatId of chatIds) {
       try {
         await this.bot.api.sendMessage(chatId, text, {
@@ -1379,7 +1389,13 @@ export class TelegramBotEngine {
           reply_markup: replyMarkup
         });
       } catch (err: any) {
-        console.warn(`[TelegramBot] Broadcast failed for chat ${chatId}:`, err.message);
+        try {
+          await this.bot.api.sendMessage(chatId, text, {
+            reply_markup: replyMarkup
+          });
+        } catch (innerErr: any) {
+          console.warn(`[TelegramBot] Broadcast failed for chat ${chatId}:`, innerErr.message);
+        }
       }
     }
   }
