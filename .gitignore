@@ -9,6 +9,9 @@ build/
 
 # Local databases & worktrees
 data/
+!backend/data/
+backend/data/*
+!backend/data/laws/
 worktrees/
 *.log
 

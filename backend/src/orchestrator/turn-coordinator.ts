@@ -5,6 +5,8 @@ import { LLMGateway, type LLMRequestMessage } from '../llm/gateway.js';
 import { SharedMemoryEngine } from '../memory/shared-memory.js';
 import { DAGPlanner } from './dag-planner.js';
 import { ApprovalGate } from '../safety/approval-gate.js';
+import { KhmerLanguageAuditor } from '../cambodia/khmer-auditor.js';
+import { khmerLegalEngine } from '../cambodia/legal-engine.js';
 
 export interface TurnEventCallbacks {
   onAgentStatus?: (roomId: string, agentName: string, state: 'typing' | 'running_tests' | 'reviewing_code' | 'idle') => void;
@@ -175,16 +177,26 @@ export class TurnCoordinator {
         const memoryInjection = SharedMemoryEngine.getPromptInjectionBlock(room.projectId, triggerPrompt);
         const chatHistory = db.getMessages(roomId, 6).map(m => `${m.senderName}: ${m.content}`).join('\n\n');
 
+        // Retrieve Relevant Cambodian Laws & Constitutional Principles
+        const relevantLaws = khmerLegalEngine.searchRelevantLaws(triggerPrompt, 2);
+        const legalContext = relevantLaws.length > 0
+          ? `\n[RELEVANT CAMBODIAN LAWS & GOVERNANCE PRINCIPLES]\n${khmerLegalEngine.formatLegalCitations(relevantLaws)}\n`
+          : '';
+
         const systemMessage = `
 ${agent.systemPrompt}
 
 ${memoryInjection}
-
+${legalContext}
 [PROJECT CONTEXT]
 Project Name: ${project?.name || 'ANGKOR Core'}
 Local Repo Path: ${project?.localRepoPath || 'workspace/'}
 Current Task: ${task.title}
 Role Responsibility: You are acting as ${agent.name} (${agent.role}). Coordinate smoothly with other agents.
+Strict Directives:
+1. Uphold national social development, social justice, and the rule of law.
+2. Zero tolerance for corruption and zero tolerance for nepotism/cronyism.
+3. Adhere strictly to the Cambodian Constitution (Article 51 Multiparty Democracy) and all national laws.
 
 [CURRENT CHAT HISTORY]
 ${chatHistory}
@@ -206,7 +218,9 @@ ${chatHistory}
           preferredModel: agent.model
         });
 
-        lastAgentOutput = llmRes.content;
+        // Audit & Purify Khmer Text with Chuon Nath Orthography & Diplomatic Standards
+        const { cleanText } = KhmerLanguageAuditor.auditAndPurify(llmRes.content);
+        lastAgentOutput = cleanText;
 
         // Check if agent proposes a risky action (Push or Merge)
         let approvalReq: ApprovalRequest | undefined;
@@ -235,7 +249,7 @@ ${chatHistory}
           senderType: 'agent',
           senderId: agent.id,
           senderName: agent.name,
-          content: llmRes.content,
+          content: cleanText,
           metadata: {
             approvalId: approvalReq?.id,
             reasoningBrief: `Tokens: ${llmRes.tokensUsed.totalTokens} | Model: ${llmRes.model} | Latency: ${llmRes.durationMs}ms`,

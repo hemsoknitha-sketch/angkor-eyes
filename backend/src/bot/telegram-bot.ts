@@ -6,6 +6,7 @@ import { TurnCoordinator } from '../orchestrator/turn-coordinator.js';
 import { ApprovalGate } from '../safety/approval-gate.js';
 import { OFFICIAL_CAMBODIA_AGENTS, SUPREME_ADMIN_AGENT } from '../agents/official-cambodia-agents.js';
 import { findAgentPresetByCommand } from '../agents/presets.js';
+import { InstitutionalSpokespersonOrchestrator } from '../cambodia/spokesperson-orchestrator.js';
 
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
@@ -305,21 +306,41 @@ export class TelegramBotEngine {
 
         const matchedPreset = findAgentPresetByCommand(command);
         if (matchedPreset) {
-          const userPrompt = query || 'សូមជួយរៀបរាប់អំពីតួនាទី បេសកកម្ម និងសេវាសាធារណៈផ្លូវការរបស់អ្នក';
+          const userPrompt = query || 'សូមជួយរៀបរាប់អំពីតួនាទី បេសកកម្ម ដំណោះស្រាយចំពោះមុខ និងសេវាសាធារណៈផ្លូវការរបស់អ្នក';
           await ctx.reply(
-            `🏛️ **${matchedPreset.name}** កំពុងទទួលសំណើ...\n` +
-            `🌐 គេហទំព័រ: \`${matchedPreset.officialWebsite || '—'}\`\n` +
-            `📘 ទំព័រហ្វេសប៊ុក: *${matchedPreset.officialFacebook || '—'}*`,
+            `🏛️ **${matchedPreset.name}**\n` +
+            `*តំណាង/ទីប្រឹក្សា/អ្នកនាំពាក្យផ្លូវការ កំពុងរៀបចំចម្លើយវិជ្ជាជីវៈ និងស្រង់មាត្រាច្បាប់...*\n` +
+            `🌐 \`${matchedPreset.officialWebsite || '—'}\` | 📘 *${matchedPreset.officialFacebook || '—'}*`,
             { parse_mode: 'Markdown' }
           );
 
           try {
-            await TurnCoordinator.handleMessage({
+            const spokespersonRes = await InstitutionalSpokespersonOrchestrator.generateSpokespersonResponse({
+              agentCommand: command,
+              agentName: matchedPreset.name,
+              institutionTitle: matchedPreset.systemPrompt.split('\n')[0] || matchedPreset.name,
+              userQuery: userPrompt,
+              model: matchedPreset.model
+            });
+
+            let replyMsg = `🏛️ **${spokespersonRes.agentName} — សេចក្តីថ្លែងការណ៍ & ការប្រឹក្សាផ្លូវការ**\n\n`;
+            replyMsg += `${spokespersonRes.officialContent}\n\n`;
+            if (spokespersonRes.citedLaws && spokespersonRes.citedLaws.length > 0) {
+              replyMsg += `⚖️ **មូលដ្ឋានច្បាប់យោង (Legal Basis)**:\n${spokespersonRes.citedLaws.map(l => `• ${l}`).join('\n')}\n\n`;
+            }
+            if (spokespersonRes.credibilityBadge) {
+              replyMsg += `🛡️ **កម្រិតភាពជឿជាក់**: ${spokespersonRes.credibilityBadge}\n`;
+            }
+
+            await ctx.reply(replyMsg, { parse_mode: 'Markdown' });
+
+            // Record into room chat history
+            db.addMessage({
               roomId: targetRoom.id,
-              senderType: 'human',
-              senderId: `tg-${ctx.from.id}`,
-              senderName: ctx.from.first_name || 'Owner',
-              content: `@${matchedPreset.name.split(' ')[0]} ${userPrompt}`
+              agentId: matchedPreset.id,
+              agentName: matchedPreset.name,
+              content: replyMsg,
+              senderType: 'agent'
             });
           } catch (err: any) {
             await ctx.reply(`⚠️ កំហុសក្នុងដំណើរការ: ${err.message}`);
