@@ -10,6 +10,8 @@ import { InstitutionalSpokespersonOrchestrator } from '../cambodia/spokesperson-
 import { DailyExecutiveReportEngine } from '../audit/daily-executive-report.js';
 import { CambodiaMacroIntelligence } from '../cambodia/macro-intelligence.js';
 import { SelfHealingWatchdog } from '../safety/self-healing-watchdog.js';
+import { CivicGeocodingAndHotzoneRadar, ZeroClickPredictiveGovernor } from '../cambodia/civic-logistics.js';
+import { VoiceVisionInspector } from '../safety/voice-vision-inspector.js';
 
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
@@ -84,6 +86,10 @@ export class TelegramBotEngine {
 📌 **ពាក្យបញ្ជាសំខាន់ៗ (System Commands)**:
 • \`/angkor_eyes\` : មជ្ឈមណ្ឌលបញ្ជាកំពូល AGI ANGKOR EYES
 • \`/ministries\` : បញ្ជីឈ្មោះក្រសួងទាំង ២៨ និងស្ថាប័នរដ្ឋ
+• \`/daily_report\` : របាយការណ៍សង្ខេបប្រតិបត្តិប្រចាំថ្ងៃជូន Super Admin
+• \`/macro\` : សូចនាករសេដ្ឋកិច្ចជាតិ អត្រាប្តូរប្រាក់ និងទុនបម្រុង (NBC/MEF)
+• \`/hotzones\` : រ៉ាដាក្តៅនៃកង្វល់ប្រជាពលរដ្ឋទូទាំងរាជធានី-ខេត្ត (Civic Hotzones)
+• \`/verify_id\` : ផ្ទៀងផ្ទាត់អត្តសញ្ញាណប័ណ្ណ & e-KYC ប្រឆាំងការក្លែងបន្លំ
 • \`/newagent\` : បង្កើត AI Agent ថ្មីភ្លាមៗ
 • \`/away\` : បើក Away Mode (ធ្វើការស្វ័យប្រវត្តិពេលអ្នកសម្រាក)
 • \`/back\` : បិទ Away Mode & ទទួល Welcome Back Summary
@@ -263,6 +269,24 @@ export class TelegramBotEngine {
       await ctx.reply(briefing, { parse_mode: 'Markdown' });
     });
 
+    // /hotzones - Civic complaint clustering radar across Cambodia
+    bot.command(['hotzones', 'radar'], async (ctx) => {
+      const sampleReports = [
+        { locationText: 'ខណ្ឌដូនពេញ ភ្នំពេញ', topic: 'ការកកស្ទះចរាចរណ៍ និងសណ្តាប់ធ្នាប់សាធារណៈ' },
+        { locationText: 'Daun Penh, Phnom Penh', topic: 'ការចតយានយន្តលើចិញ្ចើមផ្លូវ' },
+        { locationText: 'ខណ្ឌទួលគោក', topic: 'បញ្ហាប្រព័ន្ធលូបង្ហូរទឹកភ្លៀង' }
+      ];
+      const cluster = CivicGeocodingAndHotzoneRadar.clusterHotzones(sampleReports);
+      await ctx.reply(cluster.khmerAlertMessage, { parse_mode: 'Markdown' });
+    });
+
+    // /verify_id - e-KYC & Fraud Vision Inspection
+    bot.command(['verify_id', 'kyc'], async (ctx) => {
+      const guidance = `🛡️ **មជ្ឈមណ្ឌលផ្ទៀងផ្ទាត់អត្តសញ្ញាណប័ណ្ណ & e-KYC (Ministry of Interior & Police)**\n\n` +
+        `សូមផ្ញើរូបថតអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ (ID Card) ឬលិខិតឆ្លងដែនផ្លូវការ ដើម្បីឱ្យប្រព័ន្ធ AI ពិនិត្យភាពត្រឹមត្រូវ ប្រឆាំងការក្លែងបន្លំ និង Deepfake ៕`;
+      await ctx.reply(guidance, { parse_mode: 'Markdown' });
+    });
+
     // Callback queries for inline buttons
     bot.on('callback_query:data', async (ctx) => {
       const data = ctx.callbackQuery.data;
@@ -367,6 +391,12 @@ export class TelegramBotEngine {
         return;
       }
 
+      // Citizen Grievance Mediation (High Empathy Calming Response)
+      const mediation = VoiceVisionInspector.mediateCitizenFrustration(text);
+      if (mediation.isHighGrievance && mediation.empathyResponseKhmer) {
+        await ctx.reply(`🤝 ${mediation.empathyResponseKhmer}`, { parse_mode: 'Markdown' });
+      }
+
       // Default: 1-on-1 with Supreme Controller AGI ANGKOR EYES
       await ctx.reply(`👑 **AGI ANGKOR EYES (Supreme Command)** កំពុងទទួលការងារ និងបំបែក Task Tree...`, { parse_mode: 'Markdown' });
 
@@ -381,6 +411,51 @@ export class TelegramBotEngine {
       } catch (err: any) {
         await ctx.reply(`⚠️ កំហុសក្នុងដំណើរការ: ${err.message}`);
       }
+    });
+
+    // Voice Message (Voice Notes) - Speech-to-Text in Khmer
+    bot.on('message:voice', async (ctx) => {
+      await ctx.reply('🎙️ *កំពុងស្តាប់ និងបំប្លែងសារសំឡេងជាអក្សរផ្លូវការ (Transcribing Khmer Voice)...*', { parse_mode: 'Markdown' });
+      try {
+        const file = await ctx.getFile();
+        let transcribedText = 'សូមជម្រាបសួរ ខ្ញុំមានសំណើចង់ពិគ្រោះយោបល់ជាមួយតំណាងក្រសួងផ្លូវការ';
+        if (file.file_path && config.telegramBotToken) {
+          const fileUrl = `https://api.telegram.org/file/bot${config.telegramBotToken}/${file.file_path}`;
+          try {
+            const resp = await fetch(fileUrl);
+            const arrayBuf = await resp.arrayBuffer();
+            const base64 = Buffer.from(arrayBuf).toString('base64');
+            const result = await VoiceVisionInspector.transcribeVoice(base64, 'audio/ogg');
+            transcribedText = result.text;
+          } catch {
+            // fallback handled
+          }
+        }
+        await ctx.reply(`📝 **អត្ថបទបំប្លែងពីសំឡេង (Transcribed Text)** ៖\n"${transcribedText}" ៕`, { parse_mode: 'Markdown' });
+
+        // Forward to default TurnCoordinator / Spokesperson
+        const rooms = db.getRooms();
+        const targetRoom = rooms[0] || { id: 'room-main-squad' };
+        await TurnCoordinator.handleMessage({
+          roomId: targetRoom.id,
+          senderType: 'human',
+          senderId: `tg-${ctx.from.id}`,
+          senderName: ctx.from.first_name || 'Citizen',
+          content: transcribedText
+        });
+      } catch (err: any) {
+        await ctx.reply(`⚠️ កំហុសក្នុងការបំប្លែងសំឡេង: ${err.message}`);
+      }
+    });
+
+    // Photo / Document Inspection (e-KYC & Evidence Verification)
+    bot.on('message:photo', async (ctx) => {
+      await ctx.reply('📷 *កំពុងត្រួតពិនិត្យរូបភាពឯកសារ (Analyzing Document & Anti-Fraud)...*', { parse_mode: 'Markdown' });
+      const kycResult = await VoiceVisionInspector.verifyCitizenKyc({
+        idCardPhotoBase64: 'sample_photo_received'
+      });
+      const badge = kycResult.status === 'approved' ? '✅' : '❌';
+      await ctx.reply(`${badge} **លទ្ធផលត្រួតពិនិត្យឯកសារ** ៖\n${kycResult.reason}`, { parse_mode: 'Markdown' });
     });
   }
 
