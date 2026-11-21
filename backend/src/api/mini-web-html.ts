@@ -253,8 +253,9 @@ export function getMiniWebAppHtml(): string {
       const container = document.getElementById('messages-container');
       const div = document.createElement('div');
       div.className = 'p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-200 leading-relaxed';
-      div.innerHTML = '<div class="font-bold text-emerald-400 text-xs mb-1">' + sender + '</div>' +
-                      '<div class="whitespace-pre-wrap">' + escapeHtml(text) + '</div>';
+      const senderDisplay = sender.startsWith('/') ? '💬 ' + sender : (sender.startsWith('💬') ? sender : '💬 ' + sender);
+      div.innerHTML = '<div class="font-bold text-emerald-400 text-xs mb-1 font-mono tracking-wide">' + escapeHtml(senderDisplay) + '</div>' +
+                      '<div class="whitespace-pre-wrap leading-relaxed text-slate-200">' + escapeHtml(text) + '</div>';
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
     }

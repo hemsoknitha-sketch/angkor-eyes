@@ -76,7 +76,7 @@ export class InterMinisterialDebateEngine {
       const saved = db.addMessage({
         roomId: debateRoom!.id,
         agentId: `agent-${agentCommand.replace('/', '')}`,
-        agentName,
+        agentName: agentCommand.startsWith('/') ? agentCommand : `/${agentCommand}`,
         content: text,
         senderType: 'agent'
       });
@@ -150,7 +150,8 @@ export class InterMinisterialDebateEngine {
       `══════════════════════════════════════\n\n`;
 
     statements.forEach((s) => {
-      tgDigest += `💬 **${s.agentName}** (${s.roleTitle}) ៖\n` +
+      const cmd = s.agentCommand ? (s.agentCommand.startsWith('/') ? s.agentCommand : `/${s.agentCommand}`) : '/agent';
+      tgDigest += `💬 ${cmd}\n` +
         `${s.statement}\n\n` +
         `──────────────────────────────────────\n\n`;
     });

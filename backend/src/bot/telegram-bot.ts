@@ -220,7 +220,8 @@ export class TelegramBotEngine {
                 reply_markup: kb
               });
             } else {
-              const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+              const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+              const speakerText = `💬 ${cmd}\n${stmt.statement}`;
               await ctx.reply(speakerText, { parse_mode: 'Markdown' });
             }
           }
@@ -364,7 +365,8 @@ export class TelegramBotEngine {
                   await ctx.reply(stmt.statement, { reply_markup: kb });
                 }
               } else {
-                const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+                const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+                const speakerText = `💬 ${cmd}\n${stmt.statement}`;
                 try {
                   await ctx.reply(speakerText, { parse_mode: 'Markdown' });
                 } catch {
@@ -418,7 +420,8 @@ export class TelegramBotEngine {
                   await ctx.reply(stmt.statement, { reply_markup: kb });
                 }
               } else {
-                const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+                const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+                const speakerText = `💬 ${cmd}\n${stmt.statement}`;
                 try {
                   await ctx.reply(speakerText, { parse_mode: 'Markdown' });
                 } catch {
@@ -958,7 +961,8 @@ export class TelegramBotEngine {
 
                 await ctx.reply(stmt.statement, { parse_mode: 'Markdown', reply_markup: kb });
               } else {
-                const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+                const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+                const speakerText = `💬 ${cmd}\n${stmt.statement}`;
                 await ctx.reply(speakerText, { parse_mode: 'Markdown' });
               }
             }
@@ -1069,7 +1073,8 @@ export class TelegramBotEngine {
                 reply_markup: kb
               });
             } else {
-              const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+              const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+              const speakerText = `💬 ${cmd}\n${stmt.statement}`;
               await ctx.reply(speakerText, { parse_mode: 'Markdown' });
             }
           }
