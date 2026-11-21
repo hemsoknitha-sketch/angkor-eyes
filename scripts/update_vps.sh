@@ -24,8 +24,9 @@ git reset --hard origin/main
 
 # 2. Update dependencies
 echo "📦 Updating backend dependencies..."
+sudo npm install -g tsx || true
 cd backend
-npm install --omit=dev --no-audit --no-fund
+npm install --no-audit --no-fund
 
 # 3. Graceful Systemd Restart
 echo "🔄 Restarting systemd service angkor-eyes..."

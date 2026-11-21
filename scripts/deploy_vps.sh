@@ -35,14 +35,15 @@ echo "📦 Updating OS packages and installing prerequisites..."
 sudo apt-get update -y
 sudo apt-get install -y git curl ufw htop build-essential
 
-# 3. Install Node.js 20 LTS (Official NodeSource)
+# 3. Install Node.js 20 LTS (Official NodeSource) & tsx Runner
 if ! command -v node > /dev/null 2>&1 || [[ $(node -v) != v20* && $(node -v) != v22* && $(node -v) != v25* ]]; then
     echo "⚙️  Installing Node.js 20 LTS..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
 fi
+sudo npm install -g tsx || true
 
-echo "✅ Node.js Version: $(node -v) | npm Version: $(npm -v)"
+echo "✅ Node.js Version: $(node -v) | npm Version: $(npm -v) | tsx Version: $(npx tsx -v || echo 'ready')"
 
 # 4. Clone or Pull Application Repository
 if [ -d "$INSTALL_DIR/.git" ]; then
@@ -70,11 +71,13 @@ fi
 # 6. Install Lightweight Production Dependencies
 echo "📦 Installing backend production dependencies..."
 cd "$INSTALL_DIR/backend"
-npm install --omit=dev --no-audit --no-fund
+npm install --no-audit --no-fund
+
+NPM_BIN=$(which npm || echo "/usr/bin/npm")
 
 # 7. Configure Systemd 24/7 Background Service
 echo "⚙️  Configuring systemd service /etc/systemd/system/angkor-eyes.service..."
-cat << 'EOF' | sudo tee /etc/systemd/system/angkor-eyes.service > /dev/null
+cat << EOF | sudo tee /etc/systemd/system/angkor-eyes.service > /dev/null
 [Unit]
 Description=ANGKOR EYES - Sovereign Institutional AGI Platform (24/7 365 Free Engine)
 After=network.target
@@ -83,12 +86,13 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/opt/angkor-eyes/backend
-ExecStart=/usr/bin/npm start
+ExecStart=${NPM_BIN} start
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=NODE_OPTIONS=--max-old-space-size=512
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 LimitNOFILE=65536
 
 [Install]
