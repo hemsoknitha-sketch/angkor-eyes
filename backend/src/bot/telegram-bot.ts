@@ -10,6 +10,7 @@ import { OFFICIAL_CAMBODIA_AGENTS, SUPREME_ADMIN_AGENT } from '../agents/officia
 import { findAgentPresetByCommand } from '../agents/presets.js';
 import { InstitutionalSpokespersonOrchestrator } from '../cambodia/spokesperson-orchestrator.js';
 import { DailyExecutiveReportEngine } from '../audit/daily-executive-report.js';
+import { DailyMasterReportEngine } from '../cambodia/daily-master-report-engine.js';
 import { CambodiaMacroIntelligence } from '../cambodia/macro-intelligence.js';
 import { SelfHealingWatchdog } from '../safety/self-healing-watchdog.js';
 import { CivicGeocodingAndHotzoneRadar, ZeroClickPredictiveGovernor } from '../cambodia/civic-logistics.js';
@@ -348,36 +349,36 @@ export class TelegramBotEngine {
             { parse_mode: 'Markdown' }
           );
 
-          // Kick off immediate live debate with one-by-one streaming
+          // Kick off immediate live debate with one-by-one streaming across 50+ watchdog agents
           await AutonomousNewsRadarEngine.triggerLiveDebate({
             initiatedBy: ctx.from?.first_name || 'Super Admin',
-            onStatement: async (stmt, isFinalReport) => {
-              if (isFinalReport) {
-                const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
-                const kb = new InlineKeyboard();
-                if (liveUrl && liveUrl.startsWith('https://')) {
-                  kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
-                }
-                kb.text('⚡ កោះប្រជុំបន្ទាប់ភ្លាមៗ', 'auto_debate:now')
-                  .row()
-                  .text('🔴 ផ្អាក Auto Debate', 'auto_debate:stop');
-
-                try {
-                  await ctx.reply(stmt.statement, { parse_mode: 'Markdown', reply_markup: kb });
-                } catch {
-                  await ctx.reply(stmt.statement, { reply_markup: kb });
-                }
-              } else {
-                const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
-                const speakerText = `💬 ${cmd}\n${stmt.statement}`;
-                try {
-                  await ctx.reply(speakerText, { parse_mode: 'Markdown' });
-                } catch {
-                  await ctx.reply(speakerText);
-                }
+            onStatement: async (stmt) => {
+              const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+              let cleanStatement = stmt.statement.trim();
+              cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+              cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+              const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
+              try {
+                await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+              } catch {
+                await ctx.reply(speakerText);
               }
             }
           });
+
+          const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+          const kb = new InlineKeyboard();
+          if (liveUrl && liveUrl.startsWith('https://')) {
+            kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+          }
+          kb.text('⚡ ជជែកប្រធានបទបន្ទាប់', 'auto_debate:now')
+            .row()
+            .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+          await ctx.reply(
+            `✅ *កិច្ចពិភាក្សាដេញដោលត្រូវបានកត់ត្រាទុកក្នុងសៀវភៅប្រចាំថ្ងៃរួចរាល់។ របាយការណ៍សរុប (Master Daily Report) នឹងត្រូវចងក្រងផ្ញើជូននៅម៉ោង ៥:០០ ល្ងាច ៕*`,
+            { parse_mode: 'Markdown', reply_markup: kb }
+          );
           return;
         }
 
@@ -403,36 +404,36 @@ export class TelegramBotEngine {
         }
 
         if (match === 'now' || match === 'run') {
-          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live ឥឡូវនេះ...**\n*ម៉ាស៊ីនស្គែនមេ /angkor-eyes កំពុងសម្របសម្រួល និងស្រង់ទិន្នន័យពីតុឃ្លាំមើលស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
+          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live ឥឡូវនេះ...**\n*ម៉ាស៊ីនស្គែនមេ /angkor-eyes កំពុងសម្របសម្រួល និងស្រង់ទិន្នន័យពីតុឃ្លាំមើលស្ថាប័នពាក់ព័ន្ធជាង ៥០+...*`, { parse_mode: 'Markdown' });
           await AutonomousNewsRadarEngine.triggerLiveDebate({
             initiatedBy: ctx.from?.first_name || 'Super Admin',
-            onStatement: async (stmt, isFinalReport) => {
-              if (isFinalReport) {
-                const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
-                const kb = new InlineKeyboard();
-                if (liveUrl && liveUrl.startsWith('https://')) {
-                  kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
-                }
-                kb.text('⚡ ជជែកប្រធានបទបន្ទាប់', 'auto_debate:now')
-                  .row()
-                  .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
-
-                try {
-                  await ctx.reply(stmt.statement, { parse_mode: 'Markdown', reply_markup: kb });
-                } catch {
-                  await ctx.reply(stmt.statement, { reply_markup: kb });
-                }
-              } else {
-                const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
-                const speakerText = `💬 ${cmd}\n${stmt.statement}`;
-                try {
-                  await ctx.reply(speakerText, { parse_mode: 'Markdown' });
-                } catch {
-                  await ctx.reply(speakerText);
-                }
+            onStatement: async (stmt) => {
+              const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+              let cleanStatement = stmt.statement.trim();
+              cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+              cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+              const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
+              try {
+                await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+              } catch {
+                await ctx.reply(speakerText);
               }
             }
           });
+
+          const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+          const kb = new InlineKeyboard();
+          if (liveUrl && liveUrl.startsWith('https://')) {
+            kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+          }
+          kb.text('⚡ ជជែកប្រធានបទបន្ទាប់', 'auto_debate:now')
+            .row()
+            .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+          await ctx.reply(
+            `✅ *កិច្ចពិភាក្សាដេញដោលត្រូវបានកត់ត្រាទុកក្នុងសៀវភៅប្រចាំថ្ងៃរួចរាល់។ របាយការណ៍សរុប (Master Daily Report) នឹងត្រូវចងក្រងផ្ញើជូននៅម៉ោង ៥:០០ ល្ងាច ៕*`,
+            { parse_mode: 'Markdown', reply_markup: kb }
+          );
           return;
         }
 
@@ -677,10 +678,14 @@ export class TelegramBotEngine {
       await ctx.reply(text, { parse_mode: 'Markdown' });
     });
 
-    // /daily_report - Master Daily Executive Report to Super Admin
-    bot.command(['daily_report', 'report', 'digest'], async (ctx) => {
-      const report = DailyExecutiveReportEngine.generateDailyReport();
-      await ctx.reply(report.formattedKhmerReport, { parse_mode: 'Markdown' });
+    // /daily_report - Master Daily Executive Report to Super Admin (Compiled at 5:00 PM or On-Demand)
+    bot.command(['daily_report', 'report', 'digest', 'master_report'], async (ctx) => {
+      const report = DailyMasterReportEngine.compileDailyMasterReport();
+      try {
+        await ctx.reply(report, { parse_mode: 'Markdown' });
+      } catch {
+        await ctx.reply(report);
+      }
     });
 
     // /macro - Macroeconomic & Central Bank (NBC/MEF) Indicators

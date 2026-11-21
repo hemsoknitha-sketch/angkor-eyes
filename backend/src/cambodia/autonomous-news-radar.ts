@@ -2,6 +2,7 @@ import { LiveInstitutionalFeedEngine } from './live-feed-engine.js';
 import { InterMinisterialDebateEngine, type InterMinisterialDebateResult, type DebateStatement } from './debate-engine.js';
 import { TelegramBotEngine } from '../bot/telegram-bot.js';
 import { InlineKeyboard } from 'grammy';
+import { DailyMasterReportEngine } from './daily-master-report-engine.js';
 
 export class AutonomousNewsRadarEngine {
   private static processedTopics: Set<string> = new Set();
@@ -14,6 +15,12 @@ export class AutonomousNewsRadarEngine {
   private static liveChatSubscribers: Set<number> = new Set();
 
   public static domainTopics: Array<{ topic: string; initiatorCommand: string; initiatorDesc: string }> = [
+    // 0. Funan Techo Canal & Historic Waterway Logistics
+    {
+      topic: 'កិច្ចពិភាក្សាជាតិដ៏ផុសផុលជុំវិញគម្រោងព្រែកជីកហ្វូណនតេជោ៖ ផលប៉ះពាល់បរិស្ថាន សេដ្ឋកិច្ច និងភូមិសាស្ត្រនយោបាយក្នុងតំបន់',
+      initiatorCommand: '/mpwt',
+      initiatorDesc: 'តុឃ្លាំមើលវិស័យសាធារណការ និងហេដ្ឋារចនាសម្ព័ន្ធផ្លូវទឹក'
+    },
     // 1. Labour, Factory Workers & Wages
     {
       topic: 'ការការពារសិទ្ធិ និងផលប្រយោជន៍ស្របច្បាប់របស់កម្មករ-និយោជិតតាមរោងចក្រ និងការអនុវត្តប្រាក់ឈ្នួលអប្បបរមា ២០៨ ដុល្លារ/ខែ',
@@ -144,6 +151,18 @@ export class AutonomousNewsRadarEngine {
   public static initialize(intervalMinutes: number = 3): void {
     this.intervalMinutes = intervalMinutes;
     this.startTimer();
+
+    // Initialize 5:00 PM ICT Daily Master Report broadcast daemon
+    DailyMasterReportEngine.initializeDailyScheduler(async (report) => {
+      const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+      const kb = new InlineKeyboard();
+      if (liveUrl && liveUrl.startsWith('https://')) {
+        kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+      }
+      kb.text('⚡ កោះប្រជុំបន្ទាន់', 'auto_debate:now');
+
+      await TelegramBotEngine.broadcastToUsers(report, kb);
+    });
 
     // First scan after 3 seconds to immediately populate live discussions
     setTimeout(() => {
@@ -354,25 +373,12 @@ export class AutonomousNewsRadarEngine {
         topic: targetTopic,
         initiatedBy,
         onStatement: async (stmt, isFinalReport) => {
-          if (isFinalReport) {
-            const webUrl = TelegramBotEngine.getLiveWebAppUrl();
-            const kb = new InlineKeyboard();
-            if (webUrl && webUrl.startsWith('https://')) {
-              kb.webApp('🌐 បើក Sovereign Mini Web', webUrl).row();
-            }
-            kb.text('⚡ កោះប្រជុំបន្ទាប់ភ្លាមៗ', 'auto_debate:now')
-              .row()
-              .text('🔄 កំណត់ Auto Debate', 'auto_debate:status');
-
-            await TelegramBotEngine.broadcastToUsers(stmt.statement, kb);
-          } else {
-            const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
-            let cleanStatement = stmt.statement.trim();
-            cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
-            cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
-            const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
-            await TelegramBotEngine.broadcastToUsers(speakerText);
-          }
+          const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
+          let cleanStatement = stmt.statement.trim();
+          cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+          cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+          const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
+          await TelegramBotEngine.broadcastToUsers(speakerText);
         }
       });
 

@@ -80,33 +80,47 @@ test('6. InstitutionalSpokespersonOrchestrator - Sovereign Representative Output
   assert.ok(res.credibilityBadge, 'Must include credibility badge');
 });
 
-test('7. InterMinisterialDebateEngine - Independent Watchdog Deliberation & Master Scanner Report', async () => {
+test('7. InterMinisterialDebateEngine - 50+ Watchdog Desks, Cross-Agent Direct Replies & Zero Hotlines', async () => {
   const { InterMinisterialDebateEngine } = await import('../src/cambodia/debate-engine.js');
+  const { DailyMasterReportEngine } = await import('../src/cambodia/daily-master-report-engine.js');
+
   const result = await InterMinisterialDebateEngine.deliberateOnTopic({
-    topic: 'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក ការត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ និងការកាត់ពិន្ទុបណ្ណបើកបរតាមឌីជីថល',
-    initiatedBy: '/mpwt (តុឃ្លាំមើលវិស័យសាធារណការ និងសុវត្ថិភាពចរាចរណ៍)'
+    topic: 'គម្រោងព្រែកជីកហ្វូណនតេជោ និងខ្សែច្រវាក់ភស្តុភារកម្មផ្លូវទឹកជាតិ ផលប៉ះពាល់បរិស្ថាន សេដ្ឋកិច្ច និងសង្គម',
+    initiatedBy: '/mpwt (តុឃ្លាំមើលវិស័យសាធារណការ និងដឹកជញ្ជូន)'
   });
 
-  assert.ok(result.statements.length >= 3, 'Must have at least 3 statements');
-  // First statement is from /angkor-eyes
+  // 1. Over 50+ participating agents (52 selected + 2 scanner statements = 54 total)
+  assert.ok(result.participatingAgents.length >= 50, `Participating agents must be >= 50, got ${result.participatingAgents.length}`);
+  assert.ok(result.statements.length >= 52, `Statements count must be >= 52, got ${result.statements.length}`);
+
+  // 2. First and last statement are from /angkor-eyes master scanner
   assert.equal(result.statements[0].agentCommand, '/angkor-eyes');
-  assert.ok(result.statements[0].agentName.includes('ANGKOR EYES'));
+  assert.ok(result.statements[0].statement.includes('ម៉ាស៊ីនស្គែនមេ ANGKOR EYES'));
 
-  // Statements should not contain redundant command prefixes inside quotes
-  for (const s of result.statements) {
-    if (!s.isFinalReport) {
-      assert.ok(!s.statement.match(/^«\s*\/\w+:/), 'Must not contain leading /cmd: inside quotes');
-    }
-  }
-
-  // Final statement is the executive report from /angkor-eyes
   const finalStmt = result.statements[result.statements.length - 1];
   assert.equal(finalStmt.agentCommand, '/angkor-eyes');
-  assert.ok(finalStmt.isFinalReport);
-  assert.ok(finalStmt.statement.includes('AGI AGENTS របាយការណ៍ពី AI'), 'Must start with AGI AGENTS របាយការណ៍ពី AI');
-  assert.ok(finalStmt.statement.includes('══════════════'));
-  assert.ok(!finalStmt.statement.includes('សម្តេច'), 'Must NOT contain royal title សម្តេច');
-  assert.ok(!finalStmt.statement.includes('(/police)'), 'Participant list must not contain (/cmd)');
-  assert.ok(!finalStmt.statement.includes('(/mpwt)'), 'Participant list must not contain (/cmd)');
-  assert.ok(result.jointResolution.includes('ប្រមុខដឹកនាំកំពូល (Super Admin & Leadership)'), 'Addressed to Super Admin & Leadership');
+  assert.ok(finalStmt.statement.includes('ម៉ាស៊ីនស្គែនមេ ANGKOR EYES'));
+  assert.ok(finalStmt.statement.includes('ម៉ោង ៥:០០ ល្ងាច'), 'Must announce 5:00 PM Master Report');
+
+  // 3. Statements must have cross-agent reply anchors and ZERO hotlines or phone numbers
+  let crossReplyCount = 0;
+  for (let i = 1; i < result.statements.length - 1; i++) {
+    const s = result.statements[i];
+    assert.ok(!s.statement.includes('Hotline'), `Statement from ${s.agentCommand} must NOT contain Hotline`);
+    assert.ok(!s.statement.includes('1282') && !s.statement.includes('117'), `Must NOT contain phone numbers`);
+    if (s.statement.includes('ឆ្លើយតបទៅនឹង') || s.statement.includes('យល់ស្របជាមួយ') || s.statement.includes('គាំទ្រយ៉ាងពេញទំហឹងនូវ')) {
+      crossReplyCount++;
+    }
+  }
+  assert.ok(crossReplyCount > 40, `Most agents (>40) must directly cross-reply to prior agents, got ${crossReplyCount}`);
+
+  // 4. Daily Master Report Engine Verification
+  const masterReport = DailyMasterReportEngine.compileDailyMasterReport();
+  assert.ok(masterReport.includes('AGI AGENTS របាយការណ៍សរុបបញ្ហាជាក់ស្តែងប្រចាំថ្ងៃ'), 'Must include Master Daily Report header');
+  assert.ok(masterReport.includes('ប្រមុខដឹកនាំកំពូល (Super Admin & Leadership)'), 'Addressed neutrally to Super Admin & Leadership');
+  assert.ok(masterReport.includes('សំយោគប្រធានបទក្តៅ'), 'Must contain Section I');
+  assert.ok(masterReport.includes('ការរកឃើញគន្លឹះជាក់ស្តែង'), 'Must contain Section II');
+  assert.ok(masterReport.includes('ផែនការសកម្មភាពអន្តរស្ថាប័នជាយុទ្ធសាស្ត្រចំពោះមុខ'), 'Must contain Section III');
+  assert.ok(masterReport.includes('យោបល់គោរពស្នើសុំការសម្រេច'), 'Must contain Section IV');
+  assert.ok(!masterReport.includes('សម្តេច'), 'Must NOT contain royal or politician titles');
 });
