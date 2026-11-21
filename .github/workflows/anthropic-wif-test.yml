@@ -1,0 +1,53 @@
+name: Anthropic WIF Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'test_anthropic_wif.py'
+      - '.github/workflows/anthropic-wif-test.yml'
+
+permissions:
+  id-token: write   # Mandatory for GitHub Actions OIDC JWT minting
+  contents: read
+
+jobs:
+  test-claude-wif:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install anthropic
+
+      - name: Fetch GitHub OIDC Token
+        run: |
+          echo "🔑 Requesting OIDC JWT from GitHub token endpoint..."
+          TOKEN_RESPONSE=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://api.anthropic.com")
+          
+          JWT=$(echo "$TOKEN_RESPONSE" | jq -r '.value // empty')
+          
+          if [ -z "$JWT" ]; then
+            echo "❌ Failed to retrieve OIDC token from GitHub."
+            echo "Response: $TOKEN_RESPONSE"
+            exit 1
+          fi
+          
+          echo "✅ OIDC token acquired successfully."
+          # Mask token in GitHub Actions logs
+          echo "::add-mask::$JWT"
+          echo "JWT=$JWT" >> $GITHUB_ENV
+
+      - name: Run Claude Workload Identity Test
+        run: python test_anthropic_wif.py
