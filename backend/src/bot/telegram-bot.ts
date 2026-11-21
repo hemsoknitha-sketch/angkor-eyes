@@ -429,7 +429,7 @@ export class TelegramBotEngine {
 
             let replyMsg = `🏛️ **${spokespersonRes.agentName} — សេចក្តីថ្លែងការណ៍ & ការប្រឹក្សាផ្លូវការ**\n\n`;
             replyMsg += `${spokespersonRes.officialContent}\n\n`;
-            if (spokespersonRes.citedLaws && spokespersonRes.citedLaws.length > 0) {
+            if (spokespersonRes.citedLaws && spokespersonRes.citedLaws.length > 0 && !spokespersonRes.officialContent.includes('មូលដ្ឋានច្បាប់')) {
               replyMsg += `⚖️ **មូលដ្ឋានច្បាប់យោង (Legal Basis)**:\n${spokespersonRes.citedLaws.map(l => `• ${l}`).join('\n')}\n\n`;
             }
             if (spokespersonRes.credibilityBadge) {
