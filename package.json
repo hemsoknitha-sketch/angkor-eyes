@@ -14,7 +14,7 @@
     "start:runner": "cd local-runner && npm run start",
     "start:web": "cd web && npm run dev",
     "build": "npm run build --workspaces",
-    "test": "node --loader ./scripts/ts-loader.mjs --test backend/tests/security-suite.test.ts backend/tests/cambodia-intelligence.test.ts"
+    "test": "node --loader ./scripts/ts-loader.mjs --test backend/tests/security-suite.test.ts backend/tests/cambodia-intelligence.test.ts backend/tests/daily-report-watchdog.test.ts"
   },
   "keywords": [
     "agi",

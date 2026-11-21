@@ -7,6 +7,9 @@ import { ApprovalGate } from '../safety/approval-gate.js';
 import { OFFICIAL_CAMBODIA_AGENTS, SUPREME_ADMIN_AGENT } from '../agents/official-cambodia-agents.js';
 import { findAgentPresetByCommand } from '../agents/presets.js';
 import { InstitutionalSpokespersonOrchestrator } from '../cambodia/spokesperson-orchestrator.js';
+import { DailyExecutiveReportEngine } from '../audit/daily-executive-report.js';
+import { CambodiaMacroIntelligence } from '../cambodia/macro-intelligence.js';
+import { SelfHealingWatchdog } from '../safety/self-healing-watchdog.js';
 
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
@@ -246,6 +249,18 @@ export class TelegramBotEngine {
       text += `🔒 **Pending Approvals**: ${db.getApprovalRequests('pending').length}\n`;
 
       await ctx.reply(text, { parse_mode: 'Markdown' });
+    });
+
+    // /daily_report - Master Daily Executive Report to Super Admin
+    bot.command(['daily_report', 'report', 'digest'], async (ctx) => {
+      const report = DailyExecutiveReportEngine.generateDailyReport();
+      await ctx.reply(report.formattedKhmerReport, { parse_mode: 'Markdown' });
+    });
+
+    // /macro - Macroeconomic & Central Bank (NBC/MEF) Indicators
+    bot.command('macro', async (ctx) => {
+      const briefing = CambodiaMacroIntelligence.getFormattedMacroBriefing();
+      await ctx.reply(briefing, { parse_mode: 'Markdown' });
     });
 
     // Callback queries for inline buttons

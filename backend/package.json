@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
-    "test": "node --loader ../scripts/ts-loader.mjs --test tests/security-suite.test.ts tests/cambodia-intelligence.test.ts",
+    "test": "node --loader ../scripts/ts-loader.mjs --test tests/security-suite.test.ts tests/cambodia-intelligence.test.ts tests/daily-report-watchdog.test.ts",
     "build": "tsc"
   },
   "dependencies": {
