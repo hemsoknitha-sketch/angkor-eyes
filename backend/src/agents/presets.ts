@@ -22,15 +22,15 @@ export interface AgentPreset {
 export const CORE_TECHNICAL_PRESETS: AgentPreset[] = [
   {
     id: 'preset-angkor-supreme',
-    name: 'AGI ANGKOR EYES (អ្នកគ្រប់គ្រងកំពូល)',
+    name: 'AGI ANGKOR EYES Sovereign Master Scanner',
     role: 'lead',
-    command: '/angkor_eyes',
+    command: '/angkor-eyes',
     category: 'supreme_controller',
     systemPrompt: SUPREME_ADMIN_AGENT.systemPrompt,
     model: 'gemini-2.5-pro',
     avatarColor: '#10b981',
-    descriptionKhmer: 'អ្នកគ្រប់គ្រងកំពូល សិទ្ធិផ្តាច់មុខពេញលេញលើប្រព័ន្ធ AGI Agents ទាំងអស់',
-    descriptionEnglish: 'Supreme Autonomous Controller with full exclusive authority over all agents',
+    descriptionKhmer: 'ម៉ាស៊ីនស្គែនមេ និងសម្របសម្រួលប្រព័ន្ធ AGI ៧៨ ស្ថាប័ន (Super Admin Master Scanner)',
+    descriptionEnglish: 'Sovereign Master Scanner and Orchestrator across 78 civic monitoring desks',
     isSupremeAdmin: true,
     capabilities: SUPREME_ADMIN_AGENT.capabilities
   },

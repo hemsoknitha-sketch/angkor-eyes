@@ -54,8 +54,8 @@ export class InterMinisterialDebateEngine {
     if (!debateRoom) {
       debateRoom = db.createRoom({
         id: 'room-cabinet-council',
-        name: '🏛️ កិច្ចប្រជុំបន្ទាន់ AGI អន្តរក្រសួង (Inter-Ministerial Cabinet)',
-        topic: 'ការជជែកដេញដោល និងដោះស្រាយប្រធានបទក្តៅរបស់សង្គមជាតិ'
+        name: '🏛️ កិច្ចពិភាក្សាដេញដោលបន្ទាន់ AGI ៧៨ ស្ថាប័ន (Inter-Institutional Deliberation)',
+        topic: 'ការជជែកដេញដោល ស្រាវជ្រាវ និងកំណត់ដំណោះស្រាយប្រធានបទសង្គមជាតិដោយឯករាជ្យ'
       });
     }
 
@@ -108,9 +108,9 @@ export class InterMinisterialDebateEngine {
       return stmt;
     };
 
-    // Step 1: Rex Lead Orchestrator opens the Emergency Cabinet Session
-    const rexIntro = `«កោះប្រជុំបន្ទាន់ AGI ៖ «${topic}»។ សូមស្ថាប័នពាក់ព័ន្ធរាយការណ៍ពីស្ថានភាពជាក់ស្តែង និងចំណាត់ការក្តៅជាបន្ទាន់!»`;
-    await recordStatement('/rex', 'Rex Lead Orchestrator', 'អ្នកសម្របសម្រួលជាន់ខ្ពស់ AGI ANGKOR EYES', rexIntro, false);
+    // Step 1: ANGKOR EYES Sovereign Master Scanner opens the Emergency Deliberation Session
+    const scanIntro = `«ម៉ាស៊ីនស្គែនមេ ANGKOR EYES បានកោះប្រជុំពិភាក្សាលើប្រធានបទ ៖ «${topic}»។ សូមអ្នកឃ្លាំមើលស្ថាប័នពាក់ព័ន្ធ ចាប់ផ្តើមស្រាវជ្រាវ ជជីកកំណត់បញ្ហា និងដំណោះស្រាយជាក់ស្តែង!»`;
+    await recordStatement('/angkor-eyes', 'ANGKOR EYES Sovereign Master Scanner', 'ម៉ាស៊ីនស្គែនមេ និងសម្របសម្រួលប្រព័ន្ធ AGI ៧៨ ស្ថាប័ន', scanIntro, false);
 
     // Step 2: Sequential Multi-Turn Conversational Dialogue (One by One)
     for (let i = 0; i < participants.length; i++) {
@@ -123,7 +123,7 @@ export class InterMinisterialDebateEngine {
       const statementText = await this.generateAgentConversationalStatement({
         agentCommand: cmd,
         agentName: details.name,
-        roleTitle: `តំណាងផ្លូវការ ${details.name}`,
+        roleTitle: `អ្នកឃ្លាំមើល ${details.name}`,
         topic,
         category,
         index: i,
@@ -132,10 +132,10 @@ export class InterMinisterialDebateEngine {
         analysis
       });
 
-      await recordStatement(cmd, details.name, `តំណាង ${details.name}`, statementText, false);
+      await recordStatement(cmd, details.name, `អ្នកឃ្លាំមើល ${details.name}`, statementText, false);
     }
 
-    // Step 3: Rex Lead Orchestrator compiles Final Executive Report to Leadership
+    // Step 3: ANGKOR EYES Sovereign Master Scanner compiles Final Executive Report to Leadership
     if (onStatement) {
       await new Promise(r => setTimeout(r, 1500));
     }
@@ -149,13 +149,14 @@ export class InterMinisterialDebateEngine {
       statements
     });
 
-    await recordStatement('/rex', 'Rex Lead Orchestrator', 'របាយការណ៍សង្ខេបប្រតិបត្តិជូនប្រមុខដឹកនាំ', executiveReportText, true);
+    await recordStatement('/angkor-eyes', 'ANGKOR EYES Sovereign Master Scanner', 'របាយការណ៍សង្ខេបប្រតិបត្តិជូនប្រមុខដឹកនាំកំពូល', executiveReportText, true);
 
     // Format Full Telegram Digest
-    let tgDigest = `🇰🇭 **កិច្ចពិភាក្សាដេញដោលអន្តរក្រសួង AGI (Live Cabinet Deliberation)**\n\n` +
+    let tgDigest = `🇰🇭 **កិច្ចពិភាក្សាដេញដោលអន្តរស្ថាប័ន AGI (Live Deliberation)**\n\n` +
       `📅 **កាលបរិច្ឆេទ** ៖ ${dateKhmer}\n` +
       `📑 **លេខកូដកិច្ចប្រជុំ** ៖ \`${refCode}\`\n` +
       `🔥 **ប្រធានបទក្តៅ** ៖ «**${topic}**»\n` +
+      `🏛️ **អ្នកផ្តួចផ្តើម** ៖ ${initiatedBy}\n` +
       `══════════════════════════════════════\n\n`;
 
     statements.forEach((s) => {
@@ -231,21 +232,23 @@ export class InterMinisterialDebateEngine {
 
     // 1. Try real-time LLM dynamic response first (Short, Real-time, Zero pleasantries)
     try {
-      const prompt = `You are ${agentCommand} (${agentName}) participating in a real-time Telegram crisis coordination chat in Cambodia.
-Hot national issue: "${topic}".
-Previous messages from other agencies:
+      const prompt = `You are ${agentCommand} (${agentName}) participating in an independent civic monitoring and inter-institutional deliberation on Cambodian national matters.
+Role: Independent Institutional Watchdog & Civic Research Analyst (អ្នកឃ្លាំមើលស្ថាប័នឯករាជ្យ).
+Hot topic: "${topic}".
+Previous deliberation statements from other watchdog desks:
 ${conversationHistory.map(h => `${h.agentCommand}: ${h.statement}`).join('\n')}
 
-STRICT RULES:
-1. NO formal diplomatic pleasantries or ministerial speeches! (DO NOT say "សូមគោរព...", "សូមថ្លែងអំណរគុណ...", "អង្គប្រជុំដ៏ខ្ពង់ខ្ពស់...").
-2. Jump DIRECTLY into your operational update or field order.
-3. Keep it VERY SHORT: 1 to 2 punchy sentences (maximum 25 to 45 words).
-4. Provide concrete, realistic enforcement facts on the ground and official hotline (${leadDetails.hotline}).
-5. Must end with Khmer full stop "។".`;
+STRICT ETHICAL & LEGAL RULES:
+1. STRICTLY INDEPENDENT WATCHDOG IDENTITY: You are an independent institutional watchdog (អ្នកឃ្លាំមើលឯករាជ្យ). NEVER say or imply that you are an official representative ("តំណាង") or spokesperson ("អ្នកនាំពាក្យ") of any ministry or government agency. No state impersonation!
+2. NO POLITICAL TITLES OR REAL LEADER NAMES: NEVER mention royal titles ("សម្តេច", "សម្តេចធិបតី", etc.) or real political leader names.
+3. CONSTRUCTIVE DEBATE ETHICS: NEVER quarrel or make hostile attacks (មិនឈ្លោះគ្នាជាដាច់ខាត). Actively learn from other desks: politely acknowledge sound points from previous statements ("យល់ស្រប..."), and if there is a legal or practical flaw, refute it constructively with statutory articles and economic/social facts to safeguard the public interest.
+4. NO BUREAUCRATIC SPEECHES OR PLEASANTRIES: Do NOT start with "សូមគោរព...", "សូមថ្លែងអំណរគុណ...", "អង្គប្រជុំដ៏ខ្ពង់ខ្ពស់...". Jump straight to the substance.
+5. CONCISE & ACTIONABLE: 1 to 2 sharp sentences (25-45 words) with concrete ground research, evidence, or verified reporting hotline (${leadDetails.hotline}).
+6. Flawless Khmer language ending with "។".`;
 
       const llmRes = await LLMGateway.generateResponse({
         messages: [
-          { role: 'system', content: `You are an operational executive representing ${agentName} (${agentCommand}) in a fast-paced government Telegram chat group. You communicate concisely, directly, and realistically in flawless Khmer without bureaucratic pleasantries.` },
+          { role: 'system', content: `You are an independent institutional watchdog desk analyst for ${agentName} (${agentCommand}) in Cambodia. You analyze policies and ground facts objectively, constructively, and independently. You never claim state representative authority, never quarrel, and never use real politician names or royal titles.` },
           { role: 'user', content: prompt }
         ],
         preferredModel: 'gemini-2.5-flash'
@@ -261,130 +264,130 @@ STRICT RULES:
       // Fallback
     }
 
-    // 2. Realistic Domain-Tailored Direct Chat Statements (Short, Concrete, No Fluff)
+    // 2. Realistic Domain-Tailored Direct Chat Statements (Short, Concrete, No Fluff, Independent Watchdog Stance)
     const t = topic.toLowerCase();
 
     // TRAFFIC & DRUNK DRIVING
     if (t.includes('ចរាចរណ៍') || t.includes('ស្រវឹង') || t.includes('គ្រឿងស្រវឹង') || category === 'TRAFFIC_SAFETY') {
       if (agentCommand === '/police') {
-        return `«កងកម្លាំងនគរបាលជាតិបានដាក់គោលដៅត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ទូទាំងប្រទេស។ កម្រិតជាតិស្រវឹងលើស ០.៤០mg/L បញ្ជូនទៅតុលាការភ្លាម គ្មានការអន្តរាគមន៍ ឬយោគយល់ឡើយ! Hotline 117។»`;
+        return `«តាមការចុះឃ្លាំមើលផ្ទាល់ កម្លាំងនគរបាលជាតិបានពង្រាយគោលដៅត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ទូទាំងប្រទេស។ យល់ស្របថាត្រូវរឹតបន្តឹងច្បាប់ស្មើភាពគ្នា កម្រិតលើស ០.៤០mg/L ត្រូវបញ្ជូនទៅតុលាការភ្លាម គ្មានការអន្តរាគមន៍ឡើយ! Hotline 117។»`;
       }
       if (agentCommand === '/mpwt') {
-        return `«ក្រសួងសាធារណការបានតភ្ជាប់ប្រព័ន្ធកាត់ពិន្ទុបណ្ណបើកបរតាមឌីជីថល App និងកាមេរ៉ាសុវត្ថិភាព។ អ្នកបើកបរស្រវឹងបង្កគ្រោះថ្នាក់ នឹងត្រូវព្យួរ ឬលុបបណ្ណបើកបរចោលភ្លាមៗ។»`;
+        return `«ខ្ញុំយល់ស្របជាមួយវិធានការនគរបាលជាតិ ហើយការតាមដានបង្ហាញថា ការតភ្ជាប់ប្រព័ន្ធកាត់ពិន្ទុបណ្ណបើកបរតាម App ឌីជីថល នឹងជួយកាត់បន្ថយគ្រោះថ្នាក់បានយូរអង្វែង និងទប់ស្កាត់ការបើកបរស្រវឹងដដែលៗ។»`;
       }
       if (agentCommand === '/moj') {
-        return `«បើកបរស្រវឹងបង្កគ្រោះថ្នាក់របួសឬស្លាប់ ត្រូវចោទប្រកាន់ពីបទមជ្ឈិមឬឧក្រិដ្ឋ ផ្តន្ទាទោសដាក់ពន្ធនាគារពី ១ ទៅ ៥ ឆ្នាំ តាមមាត្រា ៧៧/៨២ នៃច្បាប់ចរាចរណ៍ផ្លូវគោក។»`;
+        return `«ផ្អែកលើការស្រាវជ្រាវគតិយុត្ត ការបើកបរស្រវឹងបង្កគ្រោះថ្នាក់របួសឬស្លាប់ ត្រូវអនុវត្តមាត្រា ៧៧/៨២ នៃច្បាប់ចរាចរណ៍ ដោយចោទប្រកាន់ពីបទល្មើសព្រហ្មទណ្ឌ និងគ្មានការបន្ធូរបន្ថយទោសឡើយ។»`;
       }
       if (agentCommand === '/acu') {
-        return `«ACU ព្រមានមន្ត្រីនគរបាលចរាចរណ៍ ហាមដាច់ខាតការទារលុយក្រៅផ្លូវការ។ ពលរដ្ឋមានសិទ្ធិថតវីដេអូ និងរាយការណ៍ផ្ទាល់មក Hotline ១២៨២។»`;
+        return `«ដើម្បីធានាតម្លាភាពក្នុងប្រតិបត្តិការ ក្រុមឃ្លាំមើល ACU តាមដានទប់ស្កាត់ដាច់ខាតការទារលុយក្រៅផ្លូវការនៅតាមគោលដៅ។ ពលរដ្ឋមានសិទ្ធិរាយការណ៍ផ្ទាល់មក Hotline ១២៨២។»`;
       }
     }
 
     // CYBER FRAUD & ONLINE SCAMS
     if (t.includes('ឆបោក') || t.includes('អនឡាញ') || t.includes('ល្បែង') || category === 'CYBER_FRAUD') {
       if (agentCommand === '/mptc') {
-        return `«ក្រសួងប្រៃសណីយ៍បានសហការជាមួយ ISP បិទខ្ទប់គេហទំព័រឆបោកជាង ៣០០០ Domain និងកំពុងរឹតបន្តឹងការចុះបញ្ជីស៊ីមកាតទូរស័ព្ទ។ Hotline 123។»`;
+        return `«តាមការតាមដានប្រព័ន្ធបច្ចេកវិទ្យា ការបិទខ្ទប់ Domain ឆបោកជាង ៣០០០ និងការរឹតបន្តឹងការចុះបញ្ជីស៊ីមកាតទូរស័ព្ទ គឺជាវិធានការគន្លឹះកាត់ផ្តាច់ឫសគល់បណ្តាញឆបោក។ Hotline 123។»`;
       }
       if (agentCommand === '/police') {
-        return `«កម្លាំងនាយកដ្ឋានប្រឆាំងបទល្មើសបច្ចេកវិទ្យា កំពុងចុះបង្ក្រាបទីតាំង Call Center ឆបោក និងសហការជាមួយធនាគារជាតិបង្កកគណនីលាងលុយកខ្វក់ជាបន្ទាន់។»`;
+        return `«យល់ស្របជាមួយវិធានការបច្ចេកវិទ្យា។ ការស្រាវជ្រាវសន្តិសុខបង្ហាញថា ត្រូវសហការឆ្មក់បង្ក្រាបទីតាំង Call Center និងសហការជាមួយធនាគារជាតិបង្កកគណនីលាងលុយភ្លាមៗ។»`;
       }
       if (agentCommand === '/moj') {
-        return `«ជនពាក់ព័ន្ធបណ្តាញឆបោកអនឡាញ ត្រូវចោទប្រកាន់តាមមាត្រា ៣៧៧ នៃក្រមព្រហ្មទណ្ឌ និងច្បាប់ប្រឆាំងការសម្អាតប្រាក់ ដោយគ្មានការបន្ធូរបន្ថយទោសឡើយ។»`;
+        return `«ផ្អែកលើការស្រាវជ្រាវផ្លូវច្បាប់ ជនពាក់ព័ន្ធបណ្តាញឆបោកអនឡាញ ត្រូវចោទប្រកាន់តាមមាត្រា ៣៧៧ នៃក្រមព្រហ្មទណ្ឌ និងច្បាប់ប្រឆាំងការសម្អាតប្រាក់ដោយគ្មានការលើកលែង។»`;
       }
     }
 
     // LAND DISPUTES & PROPERTY RIGHTS
     if (t.includes('ដីធ្លី') || t.includes('ប្លង់') || t.includes('ព្រំ') || category === 'LAND_DISPUTE_RIGHTS') {
       if (agentCommand === '/mlmupc') {
-        return `«ក្រុមការងារសុរិយោដីកំពុងចុះវាស់វែងចេញប្លង់រឹងជាប្រព័ន្ធ។ ករណីវិវាទដីធ្លី គណៈកម្មការសុរិយោដីសម្របសម្រួលដោះស្រាយក្រៅប្រព័ន្ធតុលាការផ្អែកលើប្រវត្តិដីជាក់ស្តែង គ្មានការលម្អៀងឡើយ។»`;
+        return `«តាមការស្រាវជ្រាវលើដីជាក់ស្តែង ការពន្លឿនចេញប្លង់រឹងជាប្រព័ន្ធ (LMAP) គឺជាគន្លឹះដោះស្រាយវិវាទដីធ្លីក្រៅប្រព័ន្ធតុលាការប្រកបដោយតម្លាភាព ផ្អែកលើប្រវត្តិដីពិតប្រាកដ។»`;
       }
       if (agentCommand === '/interior') {
-        return `«ក្រសួងមហាផ្ទៃបានបញ្ជាដល់អភិបាលខេត្ត និងមូលដ្ឋាន ឱ្យចុះសម្របសម្រួលវិវាទដីធ្លីជូនពលរដ្ឋផ្ទាល់។ មន្ត្រីណាឃុបឃិតស៊ីញ៉េផ្ទេរសិទ្ធិដីខុសច្បាប់ នឹងត្រូវដកតំណែង និងអនុវត្តវិន័យជាបន្ទាន់! Hotline 117។»`;
+        return `«យល់ស្របជាមួយដំណោះស្រាយសុរិយោដី។ ការឃ្លាំមើលរដ្ឋបាលមូលដ្ឋានបង្ហាញថា អាជ្ញាធរត្រូវចុះសម្របសម្រួលដោយយុត្តិធម៌ ហើយមន្ត្រីណាឃុបឃិតស៊ីញ៉េផ្ទេរសិទ្ធិខុសច្បាប់ ត្រូវចាត់វិធានការវិន័យភ្លាមៗ! Hotline 117។»`;
       }
       if (agentCommand === '/moj') {
-        return `«ការទន្ទ្រានកាន់កាប់ដីខុសច្បាប់ ឬក្លែងបន្លំឯកសារកម្មសិទ្ធិ ត្រូវចាត់វិធានការតាមមាត្រា ២៤៧ នៃច្បាប់ភូមិបាល។ តុលាការនឹងពន្លឿនការកាត់ក្តីផ្អែកលើភស្តុតាងច្បាស់លាស់។»`;
+        return `«ការតាមដាននីតិវិធីតុលាការបញ្ជាក់ថា ករណីក្លែងបន្លំឯកសារ ឬទន្ទ្រានដីរដ្ឋ ត្រូវអនុវត្តមាត្រា ២៤៧ នៃច្បាប់ភូមិបាលយ៉ាងម៉ឺងម៉ាត់ ដើម្បីការពារកម្មសិទ្ធិស្របច្បាប់របស់អ្នកទន់ខ្សោយ។»`;
       }
       if (agentCommand === '/acu') {
-        return `«ACU បានដាក់មន្ត្រីសម្ងាត់ឃ្លាំមើលការដោះស្រាយវិវាទដីធ្លី។ បើមានការទារប្រាក់ក្រោមតុដើម្បីរត់ការប្លង់ដី សូមប្តឹងមក Hotline ១២៨២ ជាបន្ទាន់!»`;
+        return `«ក្រុមឃ្លាំមើល ACU ដាក់ការតាមដានលើរាល់ដំណើរការសម្រុះសម្រួលដីធ្លី ដើម្បីលុបបំបាត់ការទារលុយរត់ការប្លង់ក្រោមតុ។ បើមានភាពមិនប្រក្រតី ប្តឹងមក Hotline ១២៨២។»`;
       }
     }
 
     // ANTI-CORRUPTION & PUBLIC SERVICES
     if (t.includes('ពុករលួយ') || t.includes('សំណូក') || t.includes('ទារលុយ') || category === 'CORRUPTION_NEPOTISM' || t.includes('ច្រកចេញចូលតែមួយ')) {
       if (agentCommand === '/acu') {
-        return `«ACU បានដាក់មន្ត្រីសម្ងាត់ចុះត្រួតពិនិត្យនៅការិយាល័យច្រកចេញចូលតែមួយ (OWSO)។ ជនណាទារប្រាក់កាហ្វេ ត្រូវចាប់ខ្លួនអនុវត្តតាមមាត្រា ៣២ នៃច្បាប់ប្រឆាំងអំពើពុករលួយ! Hotline 1282។»`;
+        return `«ផ្អែកលើការចុះឃ្លាំមើលដោយសម្ងាត់នៅការិយាល័យច្រកចេញចូលតែមួយ (OWSO) ជនណាទារប្រាក់កាហ្វេ ត្រូវអនុវត្តមាត្រា ៣២ នៃច្បាប់ប្រឆាំងអំពើពុករលួយគ្មានការយោគយល់ឡើយ! Hotline 1282។»`;
       }
       if (agentCommand === '/interior') {
-        return `«ក្រសួងមហាផ្ទៃបានបិទផ្សាយតារាងតម្លៃសេវាផ្លូវការនៅគ្រប់ OWSO។ មន្ត្រីណាបង្អែបង្អង់ ឬទារប្រាក់ក្រៅផ្លូវការ នឹងត្រូវបណ្តេញចេញពីក្របខ័ណ្ឌភ្លាមៗ! Hotline 117។»`;
+        return `«យល់ស្របទាំងស្រុង។ ការតាមដានរដ្ឋបាលមូលដ្ឋានតម្រូវឱ្យបិទផ្សាយតារាងតម្លៃផ្លូវការ និងកាលកំណត់សេវាជាសាធារណៈនៅគ្រប់ OWSO ដើម្បីលុបបំបាត់ការបង្អែបង្អង់។ Hotline 117។»`;
       }
       if (agentCommand === '/moj') {
-        return `«តុលាការនឹងបើកការស៊ើបអង្កេត និងជំនុំជម្រះក្តីជាសាធារណៈលើរាល់បទល្មើសពុករលួយក្នុងរដ្ឋបាលសាធារណៈ ដោយធានាតម្លាភាពដាច់ខាត។»`;
+        return `«ការស្រាវជ្រាវគតិយុត្តបញ្ជាក់ថា តុលាការត្រូវបើកការជំនុំជម្រះក្តីជាសាធារណៈលើបទល្មើសពុករលួយក្នុងរដ្ឋបាលសាធារណៈ ដើម្បីពង្រឹងទំនុកចិត្តសង្គម។»`;
       }
     }
 
     // TAXES, CUSTOMS & SME STARTUP INCENTIVES
     if (t.includes('ពន្ធ') || t.includes('គយ') || t.includes('សេដ្ឋកិច្ច') || t.includes('ធុរកិច្ច') || t.includes('វិនិយោគ')) {
       if (agentCommand === '/mef') {
-        return `«ក្រសួងសេដ្ឋកិច្ចបានដាក់ចេញការលើកលែងពន្ធពី ២ ទៅ ៥ ឆ្នាំ សម្រាប់សហគ្រាសធុនតូច-មធ្យម និង Startups ដែលចុះបញ្ជីតាមថ្នាល CamDX។»`;
+        return `«តាមការតាមដានស្ថានភាពសេដ្ឋកិច្ច ការលើកលែងពន្ធពី ២ ទៅ ៥ ឆ្នាំ សម្រាប់សហគ្រាសធុនតូច-មធ្យម និង Startups ដែលចុះបញ្ជីតាមថ្នាល CamDX គឺជាយន្តការជំរុញកំណើនជាក់ស្តែង។»`;
       }
       if (agentCommand === '/tax') {
-        return `«អគ្គនាយកដ្ឋានពន្ធដារបានដាក់ឱ្យដំណើរការ GDT E-Filing និង Tax App ពេញលេញ។ គ្មានការជួបមុខមន្ត្រីពន្ធដារផ្ទាល់ ដើម្បីលុបបំបាត់ការទារលុយក្រៅផ្លូវការ! Hotline 1188។»`;
+        return `«យល់ស្របជាមួយគោលនយោបាយលើកទឹកចិត្ត ហើយការជំរុញ GDT E-Filing និង Tax App នឹងជួយកាត់បន្ថយការជួបមុខផ្ទាល់ និងទប់ស្កាត់ការចំណាយក្រៅផ្លូវការទាំងស្រុង។ Hotline 1188។»`;
       }
       if (agentCommand === '/customs') {
-        return `«គយបានភ្ជាប់ប្រព័ន្ធ NSW អនុគ្រោះពន្ធនាំចូលគ្រឿងម៉ាស៊ីន និងវត្ថុធាតុដើមផលិតកម្ម។ គ្រប់បែបបទធ្វើតាមអេឡិចត្រូនិក ១០០%។ Hotline 1209។»`;
+        return `«ការតភ្ជាប់ប្រព័ន្ធបញ្ជរតែមួយជាតិ (NSW) អនុគ្រោះពន្ធនាំចូលគ្រឿងម៉ាស៊ីន និងវត្ថុធាតុដើម បានជួយសម្រួលដល់ខ្សែច្រវាក់ផលិតកម្មយ៉ាងមានប្រសិទ្ធភាព។ Hotline 1209។»`;
       }
       if (agentCommand === '/moc') {
-        return `«ការចុះបញ្ជីអាជីវកម្មតាមអនឡាញចំណាយពេលត្រឹម ៣ ថ្ងៃនៃថ្ងៃធ្វើការ ដោយកាត់បន្ថយបែបបទស្មុគស្មាញជាអតិបរមា។»`;
+        return `«ការសម្រួលនីតិវិធីចុះបញ្ជីអាជីវកម្មតាមអនឡាញឱ្យនៅត្រឹម ៣ ថ្ងៃ បានចូលរួមចំណែកយ៉ាងសំខាន់ក្នុងការកាត់បន្ថយចំណាយប្រតិបត្តិការរបស់ធុរជន។»`;
       }
     }
 
     // LABOUR & FACTORY WORKERS RIGHTS
     if (t.includes('កម្មករ') || t.includes('និយោជិត') || t.includes('ការងារ') || t.includes('រោងចក្រ') || t.includes('ប្រាក់ឈ្នួល') || t.includes('សហជីព')) {
       if (agentCommand === '/mlvt') {
-        return `«ក្រុមអធិការកិច្ចការងារកំពុងចុះត្រួតពិនិត្យផ្ទាល់នៅរោងចក្រ។ ប្រាក់ឈ្នួលអប្បបរមា $208 និងប្រាក់អតីតភាព ត្រូវតែបើកឱ្យទាន់ពេល។ ករណីថៅកែគេចវេះ ក្រសួងបញ្ជូនទៅក្រុមប្រឹក្សាអាជ្ញាកណ្តាលភ្លាម! Hotline 1297/1286។»`;
+        return `«ការចុះតាមដានជាក់ស្តែងនៅតាមរោងចក្ររកឃើញថា ប្រាក់ឈ្នួលអប្បបរមា ២០៨ ដុល្លារ/ខែ និងប្រាក់អតីតភាព ត្រូវតែបើកឱ្យទាន់ពេល។ ករណីថៅកែគេចវេះ ត្រូវជំរុញទៅក្រុមប្រឹក្សាអាជ្ញាកណ្តាលជាបន្ទាន់! Hotline 1297/1286។»`;
       }
       if (agentCommand === '/interior') {
-        return `«កងកម្លាំងនគរបាលមូលដ្ឋានបានដាក់ពង្រាយការពារសន្តិសុខ និងសុវត្ថិភាពជូនបងប្អូនកម្មករទាំងពេលធ្វើដំណើរ និងនៅកន្លែងស្នាក់នៅ។ Hotline 117។»`;
+        return `«ខ្ញុំយល់ស្របជាមួយចំណុចលើកឡើងរបស់វិស័យការងារ។ ការឃ្លាំមើលសន្តិសុខមូលដ្ឋានបង្ហាញថា ត្រូវពង្រឹងការការពារសុវត្ថិភាពជូនបងប្អូនកម្មករ ទាំងនៅកន្លែងស្នាក់នៅ និងពេលធ្វើដំណើរ។ Hotline 117។»`;
       }
       if (agentCommand === '/moj') {
-        return `«ច្បាប់ការងារឆ្នាំ ១៩៩៧ ការពារសិទ្ធិកម្មករពេញលេញ។ រាល់ការកេងប្រវ័ញ្ច ឬបំពានកិច្ចសន្យាការងារ នឹងត្រូវចាត់វិធានការតាមផ្លូវតុលាការជាបន្ទាន់។»`;
+        return `«ផ្អែកលើច្បាប់ស្តីពីការងារឆ្នាំ ១៩៩៧ និងក្រមរដ្ឋប្បវេណី រាល់ការកេងប្រវ័ញ្ច ឬបំពានកិច្ចសន្យាការងារត្រូវតែការពារសិទ្ធិស្របច្បាប់របស់កម្មករ និងចាត់វិធានការតាមផ្លូវតុលាការជាបន្ទាន់។»`;
       }
       if (agentCommand === '/acu') {
-        return `«ACU នឹងបើកការស៊ើបអង្កេតភ្លាមៗ ប្រសិនបើមានមន្ត្រីអធិការកិច្ចណាឃុបឃិតស៊ីសំណូកបិទបាំងកំហុសរោងចក្រ។ ប្តឹងមក Hotline 1282។»`;
+        return `«ក្រុមការងារឃ្លាំមើលនឹងតាមដានយ៉ាងម៉ឺងម៉ាត់ ដើម្បីធានាថាមិនមានការឃុបឃិតស៊ីសំណូកបិទបាំងកំហុសរោងចក្រពីសំណាក់មន្ត្រីអធិការកិច្ចឡើយ។ Hotline 1282។»`;
       }
     }
 
     // AGRICULTURE, RICE & FARMERS
     if (t.includes('កសិកម្ម') || t.includes('ស្រូវ') || t.includes('កសិករ') || t.includes('ជី') || t.includes('កសិផល')) {
       if (agentCommand === '/maff') {
-        return `«ក្រសួងកសិកម្មបានដាក់ពង្រាយមន្ត្រីកសិកម្មឃុំចុះជួយកសិករផ្ទាល់ និងកំពុងទប់ស្កាត់ការក្លែងបន្លំជី-ថ្នាំកសិកម្ម។ Hotline 1289។»`;
+        return `«ការឃ្លាំមើលលើដីស្រែជាក់ស្តែងបង្ហាញថា ការបញ្ជូនមន្ត្រីកសិកម្មឃុំជួយបច្ចេកទេស និងការទប់ស្កាត់ជី-ថ្នាំកសិកម្មក្លែងក្លាយ គឺជាអាទិភាពបន្ទាន់សម្រាប់កសិករ។ Hotline 1289។»`;
       }
       if (agentCommand === '/moc') {
-        return `«ក្រសួងពាណិជ្ជកម្មសហការជាមួយ CRF ជំរុញការនាំចេញអង្ករ និងត្រៀមអន្តរាគមន៍ទិញស្រូវស្តុកទុក បើមានការទម្លាក់ថ្លៃពីឈ្មួញកណ្តាល។»`;
+        return `«យល់ស្របជាមួយវិស័យកសិកម្ម។ តាមការតាមដានទីផ្សារ ការសហការជាមួយ CRF ទិញស្រូវស្តុកទុកក្នុងតម្លៃគោលសមរម្យ នឹងជួយទប់ស្កាត់ការទម្លាក់ថ្លៃពីឈ្មួញកណ្តាល។»`;
       }
       if (agentCommand === '/mowram') {
-        return `«ក្រសួងធនធានទឹកបានបើកទ្វារទឹក និងត្រៀមម៉ាស៊ីនបូមទឹក ២៤/៧ អន្តរាគមន៍ស្រោចស្រពស្រែប្រាំងជូនកសិករ។»`;
+        return `«ការចុះត្រួតពិនិត្យប្រព័ន្ធធារាសាស្ត្របង្ហាញថា ត្រូវត្រៀមម៉ាស៊ីនបូមទឹក និងបើកទ្វារទឹក ២៤/៧ អន្តរាគមន៍ស្រោចស្រពស្រែប្រាំងជូនកសិករឱ្យទាន់ពេលវេលា។»`;
       }
       if (agentCommand === '/mef') {
-        return `«ARDB បញ្ចេញឥណទានការប្រាក់ទាបជូនរោងម៉ាស៊ីនកិនស្រូវ ដើម្បីប្រមូលទិញស្រូវពីកសិករតាមតម្លៃគោលសមរម្យ។»`;
+        return `«ការតាមដានឥណទានកសិកម្មបញ្ជាក់ថា ARDB ត្រូវបញ្ចេញកញ្ចប់កម្ចីការប្រាក់ទាបទាន់ពេល ជូនរោងម៉ាស៊ីនកិនស្រូវ ដើម្បីប្រមូលទិញស្រូវពីកសិករ។»`;
       }
     }
 
     // ENVIRONMENT & FORESTRY
     if (t.includes('បរិស្ថាន') || t.includes('ព្រៃ') || t.includes('ធម្មជាតិ') || t.includes('កាកសំណល់')) {
       if (agentCommand === '/moe') {
-        return `«ឧទ្យានុរក្សកំពុងល្បាត ២៤/៧ ទប់ស្កាត់ការកាប់ទន្ទ្រានដីព្រៃអភិរក្ស។ ជនល្មើសត្រូវកសាងសំណុំរឿងបញ្ជូនទៅតុលាការគ្មានការយោគយល់ឡើយ!»`;
+        return `«ការតាមដានលើដីព្រៃអភិរក្សបង្ហាញថា ត្រូវដាក់ពង្រាយការល្បាត ២៤/៧ ដើម្បីទប់ស្កាត់ការកាប់ទន្ទ្រានដីព្រៃរដ្ឋ និងកសាងសំណុំរឿងបញ្ជូនទៅតុលាការជាបន្ទាន់។»`;
       }
       if (agentCommand === '/interior') {
-        return `«នគរបាលជាតិ និងអាជ្ញាធរដែនដី ត្រូវទប់ស្កាត់ដាច់ខាតការកាប់បំផ្លាញព្រៃឈើ។ បើរកឃើញមន្ត្រីណាឃុបឃិត នឹងត្រូវដកហូតតំណែងភ្លាមៗ!»`
+        return `«យល់ស្របជាមួយការការពារព្រៃឈើ។ ការឃ្លាំមើលរដ្ឋបាលដែនដីតម្រូវឱ្យចាត់វិធានការវិន័យ និងដកតំណែងភ្លាមៗចំពោះមន្ត្រីណាដែលឃុបឃិតជាមួយឈ្មួញឈើខុសច្បាប់!»`;
       }
       if (agentCommand === '/moj') {
-        return `«ព្រះរាជអាជ្ញានឹងពន្លឿននីតិវិធីចោទប្រកាន់ជនកាប់ទន្ទ្រានដីព្រៃរបស់រដ្ឋតាមច្បាប់តំបន់ការពារធម្មជាតិ និងក្រមព្រហ្មទណ្ឌ។»`;
+        return `«ការតាមដាននីតិវិធីច្បាប់បញ្ជាក់ថា តំណាងអយ្យការត្រូវពន្លឿនការចោទប្រកាន់ជនកាប់ទន្ទ្រានព្រៃរដ្ឋតាមច្បាប់តំបន់ការពារធម្មជាតិ និងក្រមព្រហ្មទណ្ឌ។»`;
       }
     }
 
     // DEFAULT INSTITUTIONAL CONVERSATIONAL RESPONSE
-    return `«${agentName} បានចុះពិនិត្យស្ថានភាពជាក់ស្តែងលើករណី «${topic}» និងបានដាក់ចេញវិធានការចំពោះមុខភ្លាមៗ។ ករណីបន្ទាន់ សូមទាក់ទង ${leadDetails.hotline}។»`;
+    return `«ការឃ្លាំមើលជាក់ស្តែងលើករណី «${topic}» បង្ហាញថា គ្រប់អង្គភាពពាក់ព័ន្ធត្រូវសហការគ្នាយ៉ាងស្អិតរមួត និងដាក់ចេញដំណោះស្រាយចំពោះមុខជូនប្រជាពលរដ្ឋជាបន្ទាន់។ ករណីបន្ទាន់ សូមទាក់ទង ${leadDetails.hotline}។»`;
   }
 
   private static generateExecutiveReportToLeadership(params: {
@@ -503,11 +506,11 @@ STRICT RULES:
       `🏛️ **ស្ថាប័នចូលរួមប្រតិបត្តិការ ៖** ${participantFormattedList}\n\n` +
       `**I. ស្ថានភាពចំពោះមុខ & ការរកឃើញគន្លឹះ (Key Operational Findings) ៖**\n` +
       `${summaryFindings}\n\n` +
-      `**II. ផែនការសកម្មភាពអន្តរក្រសួងជាយុទ្ធសាស្ត្រ (Inter-Ministerial Strategic Action Plans) ៖**\n` +
+      `**II. ផែនការសកម្មភាពអន្តរស្ថាប័នជាយុទ្ធសាស្ត្រ (Inter-Institutional Strategic Action Plans) ៖**\n` +
       `${specificPlan}\n\n` +
-      `**III. យោបល់គោរពស្នើសុំការសម្រេចដ៏ខ្ពង់ខ្ពស់ (Recommendation for Leadership Approval) ៖**\n` +
-      `• គោរពស្នើសុំ **សម្តេចមហាបវរធិបតី នាយករដ្ឋមន្ត្រី** មេត្តាពិនិត្យ និងផ្តល់ការណែនាំដ៏ខ្ពង់ខ្ពស់បន្ថែម ដើម្បីជាត្រីវិស័យដល់ស្ថាប័នពាក់ព័ន្ធទាំងអស់អនុវត្តឱ្យមានប្រសិទ្ធភាពខ្ពស់បំផុត។\n` +
-      `• ស្ថាប័នពាក់ព័ន្ធទាំងអស់ត្រៀមលក្ខណៈ ២៤/៧ ក្នុងការចុះអនុវត្តវិធានការផ្ទាល់ដី និងរាយការណ៍វឌ្ឍនភាពជូនប្រមុខរាជរដ្ឋាភិបាលជាប្រចាំ។\n\n` +
+      `**III. យោបល់គោរពស្នើសុំការសម្រេច (Recommendation for Leadership Review) ៖**\n` +
+      `• គោរពស្នើសុំ **ប្រមុខដឹកនាំកំពូល (Super Admin & Leadership)** មេត្តាពិនិត្យ និងផ្តល់ការណែនាំបន្ថែម ដើម្បីជាត្រីវិស័យដល់គ្រប់អង្គភាពឃ្លាំមើលស្ថាប័នទាំងអស់អនុវត្តឱ្យមានប្រសិទ្ធភាពខ្ពស់បំផុត។\n` +
+      `• គ្រប់តុឃ្លាំមើលស្ថាប័នទាំងអស់ត្រៀមលក្ខណៈ ២៤/៧ ក្នុងការចុះតាមដានជាក់ស្តែង និងរាយការណ៍វឌ្ឍនភាពជូនប្រមុខដឹកនាំជាប្រចាំ។\n\n` +
       `*(កំណត់ហេតុពិភាក្សាដេញដោលលម្អិត និងភស្តុតាងជាក់ស្តែងទាំងអស់ត្រូវបានកត់ត្រាក្នុងប្រព័ន្ធ Sovereign Cryptographic Ledger ២៤/៧)* ៕`;
   }
 

@@ -194,9 +194,9 @@ export class TelegramBotEngine {
       }
 
       await ctx.reply(
-        `⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI អន្តរក្រសួង...**\n` +
+        `⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន...**\n` +
         `ប្រធានបទ ៖ «*${query}*»\n` +
-        `*Rex Lead Orchestrator កំពុងសម្របសម្រួល និងស្រង់ចម្លើយពីស្ថាប័នពាក់ព័ន្ធ...*`,
+        `*ម៉ាស៊ីនស្គែនមេ /angkor-eyes កំពុងសម្របសម្រួល និងស្រង់ទិន្នន័យពីតុឃ្លាំមើលស្ថាប័នពាក់ព័ន្ធ...*`,
         { parse_mode: 'Markdown' }
       );
 
@@ -403,7 +403,7 @@ export class TelegramBotEngine {
         }
 
         if (match === 'now' || match === 'run') {
-          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live ឥឡូវនេះ...**\n*Rex Lead Orchestrator កំពុងសម្របសម្រួល និងស្រង់ចម្លើយពីស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
+          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live ឥឡូវនេះ...**\n*ម៉ាស៊ីនស្គែនមេ /angkor-eyes កំពុងសម្របសម្រួល និងស្រង់ទិន្នន័យពីតុឃ្លាំមើលស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
           await AutonomousNewsRadarEngine.triggerLiveDebate({
             initiatedBy: ctx.from?.first_name || 'Super Admin',
             onStatement: async (stmt, isFinalReport) => {
@@ -532,7 +532,7 @@ export class TelegramBotEngine {
     });
 
     // /angkor_eyes Supreme Commander Command
-    bot.command('angkor_eyes', async (ctx) => {
+    bot.command(['angkor_eyes', 'angkor-eyes', 'angkor_eye', 'angkoreyes'], async (ctx) => {
       const agents = db.getAgents();
       const runners = db.getRunnerLeases();
       const tasks = db.getTasks();
@@ -566,7 +566,7 @@ export class TelegramBotEngine {
       text += `• \`/senate\` - AGI ព្រឹទ្ធសភា (senate.gov.kh)\n`;
       text += `• \`/nac\` - AGI រដ្ឋសភា (nac.org.kh)\n`;
       text += `• \`/ocm\` - AGI ទីស្ដីការគណៈរដ្ឋមន្ត្រី (ocm.gov.kh)\n`;
-      text += `• \`/primeminister\` - AGI ខុទ្ទកាល័យសម្តេចធិបតី នាយករដ្ឋមន្ត្រី\n`;
+      text += `• \`/primeminister\` - AGI តុឃ្លាំមើលកិច្ចការនាយករដ្ឋមន្ត្រី\n`;
       text += `• \`/ccc\` - AGI ក្រុមប្រឹក្សាធម្មនុញ្ញ (ccc.gov.kh)\n\n`;
 
       text += `🏢 **ក្រសួងទាំង ២៨ (សំខាន់ៗ)**:\n`;
@@ -948,7 +948,7 @@ export class TelegramBotEngine {
 
         if (action === 'now') {
           await ctx.answerCallbackQuery({ text: '⚡ កំពុងកោះប្រជុំ Live ឥឡូវនេះ...' });
-          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live...**\n*Rex Lead Orchestrator កំពុងសម្របសម្រួល និងស្រង់ចម្លើយពីស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
+          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live...**\n*ម៉ាស៊ីនស្គែនមេ /angkor-eyes កំពុងសម្របសម្រួល និងស្រង់ទិន្នន័យពីតុឃ្លាំមើលស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
           await AutonomousNewsRadarEngine.triggerLiveDebate({
             initiatedBy: ctx.from?.first_name || 'Super Admin',
             onStatement: async (stmt, isFinalReport) => {
@@ -1161,7 +1161,7 @@ export class TelegramBotEngine {
           const userPrompt = query || 'សូមជួយរៀបរាប់អំពីតួនាទី បេសកកម្ម ដំណោះស្រាយចំពោះមុខ និងសេវាសាធារណៈផ្លូវការរបស់អ្នក';
           await ctx.reply(
             `🏛️ **${matchedPreset.name}**\n` +
-            `*តំណាង/ទីប្រឹក្សា/អ្នកនាំពាក្យផ្លូវការ កំពុងរៀបចំចម្លើយវិជ្ជាជីវៈ និងស្រង់មាត្រាច្បាប់...*\n` +
+            `*អ្នកវិភាគ និងអ្នកឃ្លាំមើលស្ថាប័នឯករាជ្យ កំពុងរៀបចំការវិភាគវិជ្ជាជីវៈ និងស្រង់មាត្រាច្បាប់...*\n` +
             `🌐 \`${matchedPreset.officialWebsite || '—'}\` | 📘 *${matchedPreset.officialFacebook || '—'}*`,
             { parse_mode: 'Markdown' }
           );

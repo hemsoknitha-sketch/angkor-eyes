@@ -79,3 +79,34 @@ test('6. InstitutionalSpokespersonOrchestrator - Sovereign Representative Output
   assert.ok(res.citedLaws.length > 0, 'Must cite Cambodian laws');
   assert.ok(res.credibilityBadge, 'Must include credibility badge');
 });
+
+test('7. InterMinisterialDebateEngine - Independent Watchdog Deliberation & Master Scanner Report', async () => {
+  const { InterMinisterialDebateEngine } = await import('../src/cambodia/debate-engine.js');
+  const result = await InterMinisterialDebateEngine.deliberateOnTopic({
+    topic: 'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក ការត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ និងការកាត់ពិន្ទុបណ្ណបើកបរតាមឌីជីថល',
+    initiatedBy: '/mpwt (តុឃ្លាំមើលវិស័យសាធារណការ និងសុវត្ថិភាពចរាចរណ៍)'
+  });
+
+  assert.ok(result.statements.length >= 3, 'Must have at least 3 statements');
+  // First statement is from /angkor-eyes
+  assert.equal(result.statements[0].agentCommand, '/angkor-eyes');
+  assert.ok(result.statements[0].agentName.includes('ANGKOR EYES'));
+
+  // Statements should not contain redundant command prefixes inside quotes
+  for (const s of result.statements) {
+    if (!s.isFinalReport) {
+      assert.ok(!s.statement.match(/^«\s*\/\w+:/), 'Must not contain leading /cmd: inside quotes');
+    }
+  }
+
+  // Final statement is the executive report from /angkor-eyes
+  const finalStmt = result.statements[result.statements.length - 1];
+  assert.equal(finalStmt.agentCommand, '/angkor-eyes');
+  assert.ok(finalStmt.isFinalReport);
+  assert.ok(finalStmt.statement.includes('AGI AGENTS របាយការណ៍ពី AI'), 'Must start with AGI AGENTS របាយការណ៍ពី AI');
+  assert.ok(finalStmt.statement.includes('══════════════'));
+  assert.ok(!finalStmt.statement.includes('សម្តេច'), 'Must NOT contain royal title សម្តេច');
+  assert.ok(!finalStmt.statement.includes('(/police)'), 'Participant list must not contain (/cmd)');
+  assert.ok(!finalStmt.statement.includes('(/mpwt)'), 'Participant list must not contain (/cmd)');
+  assert.ok(result.jointResolution.includes('ប្រមុខដឹកនាំកំពូល (Super Admin & Leadership)'), 'Addressed to Super Admin & Leadership');
+});

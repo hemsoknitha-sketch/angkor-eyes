@@ -232,6 +232,39 @@ export class LiveInstitutionalFeedEngine {
       mandate: string;
       services: string[];
     }> = {
+      '/angkor-eyes': {
+        name: 'ANGKOR EYES Sovereign Master Scanner',
+        khmerCode: 'ANGKOR-EYES',
+        website: 'https://angkor-eyes.gov.kh',
+        hotline: '១១៧ (នគរបាលជាតិ) | ១២៨២ (ACU)',
+        mandate: 'ម៉ាស៊ីនស្គែនមេ និងសម្របសម្រួលប្រព័ន្ធ AGI ៧៨ ស្ថាប័ន ឃ្លាំមើលស្ថានការណ៍ជាតិ និងចងក្រងរបាយការណ៍សង្ខេបប្រតិបត្តិជូនប្រមុខដឹកនាំកំពូល។',
+        services: [
+          'ស្គែនតាមដានស្ថានការណ៍ជាតិ និងព័ត៌មានទាន់ហេតុការណ៍ ២៤/៧',
+          'សម្របសម្រួលកិច្ចពិភាក្សាដេញដោលឆ្លងស្ថាប័ន និងចងក្រងរបាយការណ៍សង្ខេបប្រតិបត្តិ'
+        ]
+      },
+      '/angkor_eyes': {
+        name: 'ANGKOR EYES Sovereign Master Scanner',
+        khmerCode: 'ANGKOR-EYES',
+        website: 'https://angkor-eyes.gov.kh',
+        hotline: '១១៧ (នគរបាលជាតិ) | ១២៨២ (ACU)',
+        mandate: 'ម៉ាស៊ីនស្គែនមេ និងសម្របសម្រួលប្រព័ន្ធ AGI ៧៨ ស្ថាប័ន ឃ្លាំមើលស្ថានការណ៍ជាតិ និងចងក្រងរបាយការណ៍សង្ខេបប្រតិបត្តិជូនប្រមុខដឹកនាំកំពូល។',
+        services: [
+          'ស្គែនតាមដានស្ថានការណ៍ជាតិ និងព័ត៌មានទាន់ហេតុការណ៍ ២៤/៧',
+          'សម្របសម្រួលកិច្ចពិភាក្សាដេញដោលឆ្លងស្ថាប័ន និងចងក្រងរបាយការណ៍សង្ខេបប្រតិបត្តិ'
+        ]
+      },
+      '/primeminister': {
+        name: 'តុឃ្លាំមើលកិច្ចការនាយករដ្ឋមន្ត្រី',
+        khmerCode: 'PM-DESK',
+        website: 'https://ocm.gov.kh',
+        hotline: '០២៣ ២១៦ ៣២២',
+        mandate: 'តាមដាន និងវិភាគការអនុវត្តយុទ្ធសាស្ត្របញ្ចកោណដំណាក់កាលទី១ និងការកែទម្រង់រដ្ឋបាលសាធារណៈដោយឯករាជ្យ។',
+        services: [
+          'ការតាមដានការអនុវត្តគោលនយោបាយជាយុទ្ធសាស្ត្រជាតិ',
+          'ការចងក្រងរបាយការណ៍វិភាគកម្រិតប្រតិបត្តិជូនប្រមុខដឹកនាំកំពូល'
+        ]
+      },
       '/interior': {
         name: 'ក្រសួងមហាផ្ទៃ',
         khmerCode: 'ម.ភ',
@@ -358,6 +391,9 @@ export class LiveInstitutionalFeedEngine {
 
   private static getInstitutionNameKhmer(agentCommand: string): string {
     const map: Record<string, string> = {
+      '/angkor-eyes': 'ANGKOR EYES Master Scanner',
+      '/angkor_eyes': 'ANGKOR EYES Master Scanner',
+      '/primeminister': 'តុឃ្លាំមើលកិច្ចការនាយករដ្ឋមន្ត្រី',
       '/interior': 'ក្រសួងមហាផ្ទៃ',
       '/mod': 'ក្រសួងការពារជាតិ',
       '/mef': 'ក្រសួងសេដ្ឋកិច្ច និងហិរញ្ញវត្ថុ',
