@@ -1,16 +1,17 @@
 [Unit]
-Description=ANGKOR EYES - Autonomous Multi-Agent AGI Platform (24/7 365 Free Engine)
+Description=ANGKOR EYES - Sovereign Institutional AGI Platform (24/7 365 Free Engine)
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/angkor-eyes
+WorkingDirectory=/opt/angkor-eyes/backend
 ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=5
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=NODE_OPTIONS=--max-old-space-size=512
 LimitNOFILE=65536
 
 [Install]
