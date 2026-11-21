@@ -13,7 +13,7 @@ echo [2/3] Creating automated commit...
 git commit -m "sync: automated update from local station (%date% %time%)"
 
 echo [3/3] Pushing changes to GitHub remote...
-git push origin main
+git push -u origin main
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

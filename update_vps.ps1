@@ -19,7 +19,7 @@ git commit -m "sync: automated platform update $timestamp"
 
 # 2. Git Push
 Write-Host "🚀 [3/3] Pushing to GitHub (origin main)..." -ForegroundColor Green
-git push origin main
+git push -u origin main
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "⚠️ Git push requires authentication or network access." -ForegroundColor Red

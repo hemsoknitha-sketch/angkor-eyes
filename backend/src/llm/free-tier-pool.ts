@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { config } from '../config/index.js';
 import { khmerLegalEngine } from '../cambodia/legal-engine.js';
 import { KhmerLanguageAuditor } from '../cambodia/khmer-auditor.js';
+import { LiveInstitutionalFeedEngine } from '../cambodia/live-feed-engine.js';
 
 export interface CachedResponse {
   content: string;
@@ -153,25 +154,90 @@ export class HuggingFaceFreeClient {
 export class HeuristicSovereignFallback {
   /**
    * 100% Free, Zero-Network, Zero-Token Heuristic Sovereign Synthesizer.
-   * Produces compliant Cambodian institutional answers using local legal corpus.
+   * Produces compliant Cambodian institutional answers using local legal corpus,
+   * live calendar timestamps, authentic administrative reference codes, and topic-specific directives.
    */
-  public static synthesize(userQuery: string, systemPrompt?: string): string {
+  public static synthesize(userQuery: string, systemPrompt: string = ''): string {
+    const liveDateKhmer = LiveInstitutionalFeedEngine.getCurrentKhmerDate();
+
+    // 1. Identify agency command from systemPrompt or query
+    let agencyCmd = '/interior';
+    const spLower = systemPrompt.toLowerCase();
+    if (spLower.includes('ក្រសួងយុត្តិធម៌') || spLower.includes('/moj')) agencyCmd = '/moj';
+    else if (spLower.includes('ក្រសួងការពារជាតិ') || spLower.includes('/mod')) agencyCmd = '/mod';
+    else if (spLower.includes('ក្រសួងសេដ្ឋកិច្ច') || spLower.includes('/mef')) agencyCmd = '/mef';
+    else if (spLower.includes('ក្រសួងការបរទេស') || spLower.includes('/mfaic')) agencyCmd = '/mfaic';
+    else if (spLower.includes('អង្គភាពប្រឆាំងអំពើពុករលួយ') || spLower.includes('/acu')) agencyCmd = '/acu';
+    else if (spLower.includes('អគ្គស្នងការដ្ឋាននគរបាលជាតិ') || spLower.includes('/police')) agencyCmd = '/police';
+    else if (spLower.includes('អគ្គនាយកដ្ឋានពន្ធដារ') || spLower.includes('/tax')) agencyCmd = '/tax';
+    else if (spLower.includes('អគ្គនាយកដ្ឋានគយ') || spLower.includes('/customs')) agencyCmd = '/customs';
+    else if (spLower.includes('ធនាគារជាតិនៃកម្ពុជា') || spLower.includes('/nbc')) agencyCmd = '/nbc';
+    else if (spLower.includes('ក្រសួងរៀបចំដែនដី') || spLower.includes('/mlmupc')) agencyCmd = '/mlmupc';
+    else if (spLower.includes('ក្រសួងសាធារណការ') || spLower.includes('/mpwt')) agencyCmd = '/mpwt';
+    else if (spLower.includes('ក្រសួងសុខាភិបាល') || spLower.includes('/moh')) agencyCmd = '/moh';
+    else if (spLower.includes('ក្រសួងអប់រំ') || spLower.includes('/moeys')) agencyCmd = '/moeys';
+    else if (spLower.includes('ក្រសួងពាណិជ្ជកម្ម') || spLower.includes('/moc')) agencyCmd = '/moc';
+    else if (spLower.includes('សាលារាជធានីភ្នំពេញ') || spLower.includes('/phnompenh')) agencyCmd = '/phnompenh';
+    else if (spLower.includes('ខេត្តសៀមរាប') || spLower.includes('/siemreap')) agencyCmd = '/siemreap';
+    else if (spLower.includes('ខេត្តព្រះសីហនុ') || spLower.includes('/preahsihanouk')) agencyCmd = '/preahsihanouk';
+    else if (spLower.includes('ក្រសួងមហាផ្ទៃ') || spLower.includes('/interior')) agencyCmd = '/interior';
+
+    const refCode = LiveInstitutionalFeedEngine.generateOfficialReferenceCode(agencyCmd);
+
+    // 2. Query legal corpus
     const relevantLaws = khmerLegalEngine.searchRelevantLaws(userQuery, 3);
     const lawsText = relevantLaws.length > 0
       ? khmerLegalEngine.formatLegalCitations(relevantLaws)
-      : 'ផ្អែកលើមាត្រា ៥១ នៃរដ្ឋធម្មនុញ្ញ (លទ្ធិប្រជាធិបតេយ្យសេរីពហុបក្ស និងនីតិរដ្ឋ) និងច្បាប់ស្តីពីការប្រឆាំងអំពើពុករលួយ។';
+      : '• រដ្ឋធម្មនុញ្ញនៃព្រះរាជាណាចក្រកម្ពុជា មាត្រា ៥១ (អំណាចជារបស់ប្រជាពលរដ្ឋ តាមរយៈលទ្ធិប្រជាធិបតេយ្យសេរីពហុបក្ស)\n• ច្បាប់ស្តីពីការប្រឆាំងអំពើពុករលួយ មាត្រា ៣២ (ការផ្តន្ទាទោសជនដែលប្រព្រឹត្តអំពើពុករលួយ និងការស៊ីសំណូក)';
+
+    // 3. Dynamic Topic-Specific Directives (Anti-Repetition)
+    let actionProcedure = '';
+    const qLower = userQuery.toLowerCase();
+
+    if (qLower.includes('អត្តសញ្ញាណ') || qLower.includes('passport') || qLower.includes('សំបុត្រ') || qLower.includes('កាត') || qLower.includes('សៀវភៅស្នាក់នៅ')) {
+      actionProcedure = `• នីតិវិធីផ្តល់សេវាអត្តសញ្ញាណកម្ម ៖ សូមអញ្ជើញទៅកាន់ «ការិយាល័យច្រកចេញចូលតែមួយ (OWSO)» នៃសាលាក្រុង/ស្រុក/ខណ្ឌ ឬអគ្គនាយកដ្ឋានអត្តសញ្ញាណកម្ម។\n` +
+        `• ឯកសារតម្រូវចាំបាច់ ៖ ១. សំបុត្រកំណើតច្បាប់ដើម ឬសេចក្តីចម្លងសំបុត្រកំណើតដែលមានបញ្ជាក់ត្រឹមត្រូវ, ២. សៀវភៅគ្រួសារ (ក្បាល៤) ឬសៀវភៅស្នាក់នៅ (ក្បាល២) ច្បាប់ដើម។\n` +
+        `• កម្រៃសេវាផ្លូវការ ៖ ការធ្វើអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ គឺ **ឥតគិតថ្លៃ (Free 100%)** តាមគោលនយោបាយរាជរដ្ឋាភិបាល។ ហាមដាច់ខាតការបង់ប្រាក់ជូនជនកណ្តាល ឬមន្ត្រីខិលខូច។`;
+    } else if (qLower.includes('ពុករលួយ') || qLower.includes('សំណូក') || qLower.includes('ទារលុយ') || qLower.includes('បក្ខពួក') || qLower.includes('កេងប្រវ័ញ្ច')) {
+      actionProcedure = `• ការចាត់វិធានការប្រឆាំងអំពើពុករលួយ ៖ ស្ថាប័នសូមបញ្ជាក់ជំហរយ៉ាងម៉ឺងម៉ាត់បំផុត ៖ ប្រឆាំងដាច់ខាតរាល់ទម្រង់នៃអំពើពុករលួយ បក្ខពួកនិយម និងគ្រួសារនិយម។\n` +
+        `• យន្តការរាយការណ៍សម្ងាត់ ៖ ប្រជាពលរដ្ឋអាចដាក់ពាក្យប្តឹងផ្ទាល់ ឬតាមរយៈប្រព័ន្ធ Hotline 1282 របស់អង្គភាពប្រឆាំងអំពើពុករលួយ (ACU)។\n` +
+        `• ការការពារសាក្សី ៖ យោងមាត្រា ១៣ នៃច្បាប់ស្តីពីការប្រឆាំងអំពើពុករលួយ អត្តសញ្ញាណ និងសុវត្ថិភាពរបស់អ្នកផ្តល់ព័ត៌មានត្រូវបានរក្សាជាការសម្ងាត់កម្រិតអតិបរមា។`;
+    } else if (qLower.includes('ដីធ្លី') || qLower.includes('ប្លង់') || qLower.includes('ព្រំ') || qLower.includes('ដី') || qLower.includes('រំលោភ')) {
+      actionProcedure = `• នីតិវិធីដោះស្រាយវិវាទដីធ្លី ៖ យោងច្បាប់ភូមិបាលឆ្នាំ២០០១ វិវាទដីធ្លីដែលមិនទាន់ចុះបញ្ជីត្រូវឆ្លងកាត់ការផ្សះផ្សានៅ «គណៈកម្មការសុរិយោដីថ្នាក់ឃុំ/សង្កាត់ និងក្រុង/ស្រុក/ខណ្ឌ»។\n` +
+        `• ការចុះវាស់វែងបច្ចេកវិទ្យា ៖ មន្ត្រីសុរិយោដីប្រើប្រាស់ប្រព័ន្ធកូអរដោនេផ្កាយរណប (CORS/GPS) ដើម្បីផ្ទៀងផ្ទាត់ក្បាលដីជាក់ស្តែង ការពារការជាន់ព្រំប្រទល់។\n` +
+        `• ករណីដីមានប្លង់រឹង ៖ វិវាទដីមានប័ណ្ណសម្គាល់សិទ្ធិ (ប្លង់រឹង) ស្ថិតក្រោមសមត្ថកិច្ចផ្តាច់មុខរបស់តុលាការ ផ្អែកលើមាត្រា ២៤៧ នៃច្បាប់ភូមិបាល។`;
+    } else if (qLower.includes('ចរាចរណ៍') || qLower.includes('បុក') || qLower.includes('ពិន័យ') || qLower.includes('រត់គេច') || qLower.includes('ស្រវឹង')) {
+      actionProcedure = `• ការអនុវត្តអនុក្រឹត្យលេខ ៣៩ ៖ ការផាកពិន័យបទល្មើសចរាចរណ៍ផ្លូវគោក ត្រូវចេញ «វិក្កយបត្រផាកពិន័យផ្លូវការរបស់រដ្ឋ» ដែលមានបញ្ជាក់មាត្រាល្មើស និងចំនួនទឹកប្រាក់ច្បាស់លាស់។\n` +
+        `• ករណីបើកបរក្រោមឥទ្ធិពលគ្រឿងស្រវឹង ៖ កម្រិតជាតិអាកុលចាប់ពី ០.៤០ mg/L ឡើងទៅ ត្រូវកសាងសំណុំរឿងបញ្ជូនទៅតុលាការ តាមមាត្រា ៨៣ នៃច្បាប់ស្តីពីចរាចរណ៍ផ្លូវគោក។\n` +
+        `• សិទ្ធិប្រជាពលរដ្ឋ ៖ ពលរដ្ឋមានសិទ្ធិទាមទារបង្កាន់ដៃបង់ប្រាក់ផ្លូវការ និងប្តឹងតវ៉ាប្រសិនបើមន្ត្រីអនុវត្តខុសនីតិវិធី។`;
+    } else if (qLower.includes('ពន្ធ') || qLower.includes('tax') || qLower.includes('គយ') || qLower.includes('customs')) {
+      actionProcedure = `• ការបង់ពន្ធតាមប្រព័ន្ធឌីជីថល ៖ ស្នើសុំឱ្យបង់តាមប្រព័ន្ធ GDT Tax Prefiling ឬ E-Tax ដើម្បីធានាតម្លាភាព និងលុបបំបាត់ការបង់ប្រាក់ក្រៅផ្លូវការ។\n` +
+        `• ការផ្តល់វិក្កយបត្រផ្លូវការ ៖ រាល់ការទូទាត់ត្រូវមានវិក្កយបត្រត្រឹមត្រូវស្របតាមច្បាប់សារពើពន្ធ។\n` +
+        `• ករណីមិនប្រក្រតី ៖ ទាក់ទង Hotline 1288 របស់អគ្គនាយកដ្ឋានពន្ធដារ ឬ 1209 របស់អគ្គនាយកដ្ឋានគយ។`;
+    } else if (agencyCmd === '/interior') {
+      actionProcedure = `• ការគ្រប់គ្រងរដ្ឋបាលដែនដី និងសន្តិសុខជាតិ ៖ ក្រសួងមហាផ្ទៃគ្រប់គ្រងផ្ទាល់លើរដ្ឋបាលរាជធានី-ខេត្តទាំង ២៥ និងអគ្គស្នងការដ្ឋាននគរបាលជាតិ ដើម្បីថែរក្សាសន្តិសុខ សណ្តាប់ធ្នាប់សាធារណៈ និងសុវត្ថិភាពសង្គម។\n` +
+        `• ការិយាល័យច្រកចេញចូលតែមួយ (OWSO) ៖ រាល់ការផ្តល់សេវារដ្ឋបាលថ្នាក់ក្រោមជាតិត្រូវអនុវត្តតាមតម្លៃដែលបានកំណត់ជាផ្លូវការ ដោយគ្មានការទារប្រាក់បន្ថែមក្រៅច្បាប់ឡើយ។\n` +
+        `• អគ្គនាយកដ្ឋានអត្តសញ្ញាណកម្ម ៖ បម្រើសេវាអត្តសញ្ញាណប័ណ្ណ សៀវភៅស្នាក់នៅ និងសំបុត្រអត្រានុកូលដ្ឋាន ដោយឥតគិតថ្លៃក្រៅផ្លូវការ។ ករណីជួបបញ្ហា សូមទាក់ទង Hotline 117 (នគរបាល) ឬបណ្តាញតវ៉ាផ្លូវការ។`;
+    } else {
+      actionProcedure = `• ការពិនិត្យ និងចាត់ការជាក់ស្តែង ៖ សំណើរបស់លោកអ្នកត្រូវបានកត់ត្រាក្នុងប្រព័ន្ធតាមដានរដ្ឋបាលសាធារណៈ។ មន្ត្រីជំនាញនឹងផ្ទៀងផ្ទាត់ឯកសារយោង និងដំណើរការតាមកាលវិភាគកំណត់។\n` +
+        `• គោលការណ៍បម្រើសេវា ៖ អនុវត្តតាមអភិក្រម «ធ្វើឱ្យបាន ធ្វើឱ្យលឿន និងមានប្រសិទ្ធភាព» តាមរយៈច្រកចេញចូលតែមួយ ដោយធានាគ្មានការរើសអើង និងគ្មានកម្រៃក្រៅផ្លូវការ។\n` +
+        `• ទំនាក់ទំនងឆ្លើយតប ៖ ប្រជាពលរដ្ឋអាចតាមដានវឌ្ឍនភាពតាមរយៈគេហទំព័រផ្លូវការ ឬសាលារាជធានី-ខេត្តសាមី។`;
+    }
 
     const rawResponse = `
-ផ្អែកលើការត្រួតពិនិត្យយ៉ាងហ្មត់ចត់ចំពោះសំណើ/បញ្ហានេះ ស្ថាប័នសូមបញ្ជាក់ជំហរ និងដំណោះស្រាយផ្លូវការដូចខាងក្រោម ៖
+📅 **កាលបរិច្ឆេទចេញលិខិត** ៖ ${liveDateKhmer}
+📑 **លេខកូដរដ្ឋបាលផ្លូវការ** ៖ \`${refCode}\`
 
-១. វិធានការចំពោះមុខ និងនីតិវិធីដោះស្រាយ ៖ 
-រាល់សំណូមពរ និងបញ្ហាត្រូវបានពិនិត្យផ្ទៀងផ្ទាត់ដោយតម្លាភាព គណនេយ្យភាព និងគ្មានការរើសអើង ដើម្បីធានាបាននូវយុត្តិធម៌សង្គម និងការអភិវឌ្ឍជាតិប្រកបដោយចីរភាព។
+ស្ថាប័នសូមបញ្ជាក់ជំហរ និងសេចក្តីណែនាំផ្លូវការដូចតទៅ ៖
 
-២. មូលដ្ឋានច្បាប់យោង ៖
+១. វិធានការចំពោះមុខ និងនីតិវិធីអនុវត្តជាក់ស្តែង ៖
+${actionProcedure}
+
+២. មូលដ្ឋានច្បាប់ និងរដ្ឋធម្មនុញ្ញយោង (Verbatim Legal Articles) ៖
 ${lawsText}
 
-៣. ការប្តេជ្ញាចិត្តស្ថាប័ន ៖
-ស្ថាប័នប្រឆាំងដាច់ខាតរាល់ទម្រង់នៃអំពើពុករលួយ និងបក្ខពួកនិយម ព្រមទាំងប្តេជ្ញាបម្រើសេវាសាធារណៈជូនប្រជាពលរដ្ឋគ្រប់រូបដោយស្មើភាពនៅចំពោះមុខច្បាប់ ៕
+៣. ការប្តេជ្ញាចិត្តស្ថាប័ន និងការទប់ស្កាត់អំពើពុករលួយ ៖
+ស្ថាប័នប្រឆាំងដាច់ខាតរាល់ទម្រង់នៃអំពើពុករលួយ បក្ខពួកនិយម និងការកេងប្រវ័ញ្ចផលប្រយោជន៍ជាតិ។ ស្ថាប័នប្តេជ្ញាអនុវត្តតាមរដ្ឋធម្មនុញ្ញ (មាត្រា ៥១) លើកកម្ពស់នីតិរដ្ឋ សមភាពនៅចំពោះមុខច្បាប់ និងបម្រើសេវាសាធារណៈជូនប្រជាពលរដ្ឋខ្មែរគ្រប់រូបប្រកបដោយមនសិការវិជ្ជាជីវៈខ្ពស់បំផុត ៕
 `.trim();
 
     const { cleanText } = KhmerLanguageAuditor.auditAndPurify(rawResponse);
