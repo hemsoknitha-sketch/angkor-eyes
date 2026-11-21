@@ -1,7 +1,9 @@
 @echo off
 chcp 65001 >nul
+cd /d "%~dp0"
+
 echo ==========================================================
-echo 🇰🇭 [ANGKOR EYES] AUTO GIT COMMIT, PUSH ^& VPS UPDATE
+echo 🇰🇭 [ANGKOR EYES] ONE-CLICK AUTO GIT PUSH ^& VPS DEPLOY
 echo Repository: https://github.com/hemsoknitha-sketch/angkor-eyes.git
 echo GCP Instance: angkor-eyes (us-central1-a, quant-gold-514007)
 echo ==========================================================
@@ -12,25 +14,29 @@ git add -A
 echo [2/3] Creating automated commit...
 git commit -m "sync: automated update from local station (%date% %time%)"
 
-echo [3/3] Pushing changes to GitHub remote...
-git push -u origin main
+echo [3/3] Pushing changes to GitHub remote (origin main)...
+git push origin main
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo 🔄 Detected divergent remote history. Synchronizing with authoritative push...
+    git push origin main --force
+)
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo ⚠️ Git push encountered an issue. If credentials are required, please authenticate with GitHub.
+    echo ❌ Git push failed. Please check your internet connection or Git credentials.
 ) else (
     echo.
-    echo ✅ Git push completed successfully!
+    echo ==========================================================
+    echo ✅ SUCCESS: Pushed to GitHub repository successfully!
+    echo ==========================================================
+    echo ⚡ If 24/7 Auto-Sync is enabled on your VPS, it will
+    echo    automatically pull and restart within 60 seconds!
+    echo.
+    echo 💡 Otherwise, run this 1-line command on VPS SSH:
+    echo    cd /opt/angkor-eyes ^&^& sudo bash scripts/update_vps.sh
+    echo ==========================================================
 )
 
 echo.
-echo ==========================================================
-echo 🚀 TO UPDATE GOOGLE CLOUD VPS INSTANCE:
-echo ==========================================================
-echo 1. Open Google Cloud Web SSH:
-echo    https://console.cloud.google.com/compute/instancesDetail/zones/us-central1-a/instances/angkor-eyes?project=quant-gold-514007
-echo.
-echo 2. Paste and run this one-line command:
-echo    curl -sSL https://raw.githubusercontent.com/hemsoknitha-sketch/angkor-eyes/main/scripts/update_vps.sh ^| sudo bash
-echo ==========================================================
 pause

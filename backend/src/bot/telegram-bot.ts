@@ -65,7 +65,7 @@ export class TelegramBotEngine {
 
     // Helper for main menu keyboard
     const buildMainMenuKeyboard = () => {
-      const kb = new InlineKeyboard()
+      return new InlineKeyboard()
         .text('🏛️ ស្ថាប័នកំពូលជាតិ', 'menu_top')
         .text('🏢 ក្រសួងទាំង ២៨', 'menu_ministries')
         .row()
@@ -74,16 +74,9 @@ export class TelegramBotEngine {
         .row()
         .text('🔥 ប្រធានបទក្តៅ & Debate', 'menu_debate')
         .text('⚖️ សវនកម្មច្បាប់', 'menu_legal')
-        .row();
-
-      const miniAppUrl = process.env.WEB_APP_URL || process.env.MINI_APP_URL || '';
-      if (miniAppUrl && miniAppUrl.startsWith('https://')) {
-        kb.webApp('🌐 បើក Sovereign Mini Web', miniAppUrl);
-      } else {
-        kb.text('🌐 បើក Sovereign Mini Web', 'open_web');
-      }
-      kb.text('📊 ស្ថានភាពប្រព័ន្ធ', 'menu_status');
-      return kb;
+        .row()
+        .text('🌐 បើក Sovereign Mini Web', 'open_web')
+        .text('📊 ស្ថានភាពប្រព័ន្ធ', 'menu_status');
     };
 
     const getMainMenuText = () => {
@@ -651,47 +644,17 @@ export class TelegramBotEngine {
         return;
       }
 
-      if (data === 'menu_legal') {
-        await ctx.answerCallbackQuery();
-        const kb = new InlineKeyboard()
-          .text('📜 ប្រឆាំងពុករលួយ (ច្បាប់ ACU)', 'agency:/acu')
-          .row()
-          .text('⚖️ ចរាចរណ៍ផ្លូវគោក (ច្បាប់នគរបាល)', 'agency:/police')
-          .row()
-          .text('🏛️ វិវាទដីធ្លី & ប្លង់រឹង (ច្បាប់ភូមិបាល)', 'agency:/mlmupc')
-          .row()
-          .text('💼 ការងារ & សន្តិសុខសង្គម (ច្បាប់ ប.ស.ស)', 'agency:/mlvt')
-          .row()
-          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
-
-        await ctx.editMessageText(
-          `⚖️ **ប្រព័ន្ធសវនកម្មច្បាប់ និងក្របខ័ណ្ឌគតិយុត្តជាតិ (Cambodian Legal Framework)**\n\n` +
-          `• គ្រប់សេចក្តីថ្លែងការណ៍ទាំងអស់ត្រូវផ្ទៀងផ្ទាត់មាត្រាច្បាប់ផ្លូវការ ១០០%\n` +
-          `• គ្មានការសរសេរជាទូទៅ ឬគ្មានមូលដ្ឋានគតិយុត្តឡើយ\n` +
-          `• សូមជ្រើសរើសស្ថាប័នដើម្បីពិនិត្យមាត្រាច្បាប់ផ្លូវការ ៖`,
-          { reply_markup: kb, parse_mode: 'Markdown' }
-        );
-        return;
-      }
-
       if (data === 'open_web') {
-        await ctx.answerCallbackQuery();
-        const miniAppUrl = process.env.WEB_APP_URL || process.env.MINI_APP_URL || '';
-        const kb = new InlineKeyboard();
-        if (miniAppUrl && miniAppUrl.startsWith('https://')) {
-          kb.webApp('🚀 បើកផ្ទាំងគ្រប់គ្រង Mini Web ឥឡូវនេះ', miniAppUrl).row();
-        }
-        kb.text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
-
+        await ctx.answerCallbackQuery({ text: 'សូមបើក Mini Web តាម Browser ឬ Cloudflare HTTPS' });
         await ctx.reply(
-          `🌐 **ANGKOR EYES SOVEREIGN MINI WEB COMMAND CENTER**\n\n` +
+          `🌐 **ANGKOR EYES Sovereign Mini Web Command Center**\n\n` +
           `• ផ្ទាំងគ្រប់គ្រងរដ្ឋបាលឌីជីថលបែប Futuristic Dark Mode\n` +
           `• មើលការជជែកដេញដោលផ្ទាល់តាម WebSockets (Real-Time)\n` +
           `• បញ្ជី AGI Agents ទាំង ៧៨ និងការអនុញ្ញាតសកម្មភាពហានិភ័យ (Approvals)\n\n` +
           `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n` +
-          (miniAppUrl ? `• 🔗 **Cloudflare HTTPS Live** ៖ \`${miniAppUrl}\`\n` : `• 🔗 **Cloudflare HTTPS Tunnel** ៖ \`https://<your-subdomain>.trycloudflare.com\`\n`) +
-          `• 🖥️ **Local / Direct** ៖ \`http://localhost:3000\``,
-          { reply_markup: kb, parse_mode: 'Markdown' }
+          `• តាម Local ៖ \`http://localhost:3000\`\n` +
+          `• តាម Cloudflare HTTPS ៖ \`https://<your-tunnel>.trycloudflare.com\``,
+          { parse_mode: 'Markdown' }
         );
         return;
       }
@@ -843,7 +806,7 @@ export class TelegramBotEngine {
       { command: 'hottopics', description: '🔥 ប្រធានបទក្តៅសង្គមជាតិកំពុងផ្ទុះ' },
       { command: 'web', description: '🌐 បើក Sovereign Mini Web App' },
       { command: 'status', description: '📊 ពិនិត្យសុខភាពប្រព័ន្ធ & ម៉ាស៊ីន VPS' }
-    ]).catch(() => {});
+    ]).catch(() => { });
 
     bot.start({
       onStart: (info) => {

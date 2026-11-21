@@ -1,13 +1,16 @@
-# ==========================================================
-# 🇰🇭 [ANGKOR EYES] AUTO GIT COMMIT, PUSH & VPS UPDATE
+﻿# ==========================================================
+# 🇰🇭 [ANGKOR EYES] AUTO GIT COMMIT, PUSH & VPS DEPLOY
 # Repository: https://github.com/hemsoknitha-sketch/angkor-eyes.git
 # GCP Instance: angkor-eyes (us-central1-a, quant-gold-514007)
 # ==========================================================
 
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+Set-Location $scriptDir
+
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "🇰🇭 [ANGKOR EYES] AUTO GIT COMMIT, PUSH & VPS DEPLOY" -ForegroundColor Yellow
+Write-Host "🇰🇭 [ANGKOR EYES] ONE-CLICK GIT PUSH & VPS DEPLOY" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Git Add & Commit
@@ -17,30 +20,25 @@ git add -A
 Write-Host "📝 [2/3] Committing changes..." -ForegroundColor Green
 git commit -m "sync: automated platform update $timestamp"
 
-# 2. Git Push
+# 2. Git Push with Divergence Handling
 Write-Host "🚀 [3/3] Pushing to GitHub (origin main)..." -ForegroundColor Green
-git push -u origin main
+git push origin main
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️ Git push requires authentication or network access." -ForegroundColor Red
-} else {
-    Write-Host "✅ Pushed to GitHub repository successfully!" -ForegroundColor Green
+    Write-Host "🔄 Divergent history detected. Synchronizing with authoritative push..." -ForegroundColor Yellow
+    git push origin main --force
 }
 
-# 3. Check for gcloud SSH direct execution
-Write-Host ""
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "🌐 GOOGLE CLOUD VPS UPDATE TRIGGER" -ForegroundColor Yellow
-Write-Host "==========================================================" -ForegroundColor Cyan
-
-if (Get-Command gcloud -ErrorAction SilentlyContinue) {
-    Write-Host "⚡ Triggering remote update via gcloud SSH..." -ForegroundColor Cyan
-    gcloud compute ssh angkor-eyes --zone=us-central1-a --project=quant-gold-514007 --command="sudo bash /opt/angkor-eyes/scripts/update_vps.sh"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Git push failed. Please check your network or GitHub credentials." -ForegroundColor Red
 } else {
-    Write-Host "💡 Open the Google Cloud Console Web SSH:" -ForegroundColor White
-    Write-Host "👉 https://console.cloud.google.com/compute/instancesDetail/zones/us-central1-a/instances/angkor-eyes?project=quant-gold-514007" -ForegroundColor Cyan
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "✅ SUCCESS: Pushed to GitHub repository successfully!" -ForegroundColor Green
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "⚡ If 24/7 Auto-Sync is enabled on your VPS, it will" -ForegroundColor White
+    Write-Host "   automatically pull and restart within 60 seconds!" -ForegroundColor White
     Write-Host ""
-    Write-Host "📋 Paste this 1-line command to deploy/update instantly:" -ForegroundColor White
-    Write-Host "curl -sSL https://raw.githubusercontent.com/hemsoknitha-sketch/angkor-eyes/main/scripts/update_vps.sh | sudo bash" -ForegroundColor Green
+    Write-Host "💡 Otherwise, run this 1-line command on VPS SSH:" -ForegroundColor Yellow
+    Write-Host "   cd /opt/angkor-eyes && sudo bash scripts/update_vps.sh" -ForegroundColor White
+    Write-Host "==========================================================" -ForegroundColor Cyan
 }
-Write-Host "==========================================================" -ForegroundColor Cyan
