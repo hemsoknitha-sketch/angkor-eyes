@@ -73,22 +73,30 @@ export class LiveInstitutionalFeedEngine {
       const items = xmlText.split('<item>').slice(1, 5); // Take top 4 recent news items
 
       const articles: LiveInstitutionalArticle[] = [];
+      const instDetails = this.getInstitutionDetails(cmdNormalized);
+
       for (const item of items) {
         const titleMatch = item.match(/<title>(.*?)<\/title>/);
-        const linkMatch = item.match(/<link>(.*?)<\/link>/);
         const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
         const sourceMatch = item.match(/<source[^>]*>(.*?)<\/source>/);
 
         if (titleMatch && titleMatch[1]) {
           const rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim();
-          const cleanLink = linkMatch ? linkMatch[1].trim() : 'https://www.information.gov.kh';
+
+          // Reject foreign script leaks (Vietnamese/Thai/Chinese/corporate noise)
+          if (/[\u0e00-\u0e7f\u4e00-\u9fff]|công ty|tập đoàn|trường hải|việt nam|thaco/i.test(rawTitle)) {
+            continue;
+          }
+
+          // Clean publisher suffix
+          const cleanTitle = rawTitle.replace(/\s*-\s*(?:The Star|Khmer Times|Phnom Penh Post|Fresh News|VOD|RFA|VOA|CamboJA).*$/i, '').trim();
           const pubDate = dateMatch ? this.formatDateKhmer(new Date(dateMatch[1])) : this.getCurrentKhmerDate();
-          const sourceName = sourceMatch ? sourceMatch[1].trim() : 'Official News Source';
+          const sourceName = sourceMatch ? sourceMatch[1].trim() : 'ប្រភពព័ត៌មានរដ្ឋាភិបាលផ្លូវការ';
 
           articles.push({
-            title: rawTitle,
+            title: cleanTitle,
             source: sourceName,
-            url: cleanLink,
+            url: instDetails.website,
             publishedDate: pubDate,
             category: 'ព័ត៌មានទាន់ហេតុការណ៍ផ្លូវការ'
           });
@@ -149,6 +157,147 @@ export class LiveInstitutionalFeedEngine {
     const randomSeq = (Math.floor(Date.now() / 1000) % 899 + 100).toString();
     const agencyCode = agentCommand.replace('/', '').toUpperCase();
     return `លេខ ៖ ${randomSeq}/${yearSuffix} ស.ជ.ណ / ${agencyCode}`;
+  }
+
+  public static getInstitutionDetails(agentCommand: string): {
+    name: string;
+    khmerCode: string;
+    website: string;
+    hotline: string;
+    mandate: string;
+    services: string[];
+  } {
+    const cmd = agentCommand.toLowerCase().startsWith('/') ? agentCommand.toLowerCase() : `/${agentCommand.toLowerCase()}`;
+    const map: Record<string, {
+      name: string;
+      khmerCode: string;
+      website: string;
+      hotline: string;
+      mandate: string;
+      services: string[];
+    }> = {
+      '/interior': {
+        name: 'ក្រសួងមហាផ្ទៃ',
+        khmerCode: 'ម.ភ',
+        website: 'https://www.interior.gov.kh',
+        hotline: '១១៧ (នគរបាលជាតិ) | ១២៨២ (ACU) | ០២៣ ៧២៦ ២៤៤',
+        mandate: 'ដឹកនាំ និងគ្រប់គ្រងរដ្ឋបាលដែនដីគ្រប់ថ្នាក់ (រាជធានី-ខេត្តទាំង ២៥, ក្រុង-ស្រុក-ខណ្ឌទាំង ២០៩, និងឃុំ-សង្កាត់ទាំង ១,៦៥២), អគ្គស្នងការដ្ឋាននគរបាលជាតិ, អគ្គនាយកដ្ឋានអត្តសញ្ញាណកម្ម, អគ្គនាយកដ្ឋានអន្តោប្រវេសន៍ និងអគ្គនាយកដ្ឋានពន្ធនាគារ ដើម្បីធានាសន្តិសុខជាតិ សណ្តាប់ធ្នាប់សាធារណៈ និងសុវត្ថិភាពសង្គម។',
+        services: [
+          'ការិយាល័យច្រកចេញចូលតែមួយ (OWSO) ៖ បម្រើសេវារដ្ឋបាលថ្នាក់ក្រោមជាតិប្រកបដោយតម្លាភាព គណនេយ្យភាព និងគ្មានអំពើពុករលួយ។',
+          'អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរគំរូថ្មី (Chip) ៖ ផ្តល់ជូន **ឥតគិតថ្លៃ ១០០%** តាមគោលនយោបាយរាជរដ្ឋាភិបាល ដោយគ្មានការបង់ប្រាក់ក្រៅផ្លូវការឡើយ។',
+          'សៀវភៅស្នាក់នៅ (ក្បាល២) និងសៀវភៅគ្រួសារ (ក្បាល៤) ៖ ធ្វើឡើងតាមប៉ុស្តិ៍នគរបាលរដ្ឋបាលឃុំ/សង្កាត់។',
+          'លិខិតឆ្លងដែនធម្មតា ៖ ផ្តល់ជូនតាមរយៈអគ្គនាយកដ្ឋានអត្តសញ្ញាណកម្ម ស្របតាមកាលវិភាគ និងតម្លៃកំណត់របស់រដ្ឋ។'
+        ]
+      },
+      '/mod': {
+        name: 'ក្រសួងការពារជាតិ',
+        khmerCode: 'ក.ព.ជ',
+        website: 'https://www.mod.gov.kh',
+        hotline: '០២៣ ៤២៧ ៤៩៩',
+        mandate: 'ការពារបូរណភាពទឹកដី អធិបតេយ្យជាតិ សន្តិភាព និងការពាររដ្ឋធម្មនុញ្ញនៃព្រះរាជាណាចក្រកម្ពុជា។',
+        services: [
+          'ការកសាង និងពង្រឹងសមត្ថភាពកងយោធពលខេមរភូមិន្ទ (កងទ័ពជើងគោក ជើងទឹក ជើងអាកាស)។',
+          'កាតព្វកិច្ចយោធា និងការចុះបញ្ជីយោធវិន័យស្របតាមច្បាប់ស្តីពីកាតព្វកិច្ចការពារជាតិ។'
+        ]
+      },
+      '/moj': {
+        name: 'ក្រសួងយុត្តិធម៌',
+        khmerCode: 'យ.ធ',
+        website: 'https://www.moj.gov.kh',
+        hotline: '០២៣ ២១៦ ៣២២',
+        mandate: 'ដឹកនាំការកែទម្រង់ច្បាប់ និងប្រព័ន្ធយុត្តិធម៌ ជំរុញ និងពន្លឿនការដោះស្រាយរឿងក្តីនៅតាមតុលាការ លើកកម្ពស់យុត្តិធម៌សង្គម និងភាពស្អាតស្អំក្នុងប្រព័ន្ធតុលាការ។',
+        services: [
+          'ការផ្តល់ព្រឹត្តិបត្រថ្កោលទោស (លិខិតថ្កោលទោស) តាមប្រព័ន្ធឌីជីថល (Clean Criminal Record Certificate)។',
+          'យន្តការសម្រុះសម្រួលវិវាទក្រៅប្រព័ន្ធតុលាការ (ADR) តាមរយៈអាជ្ញាធរជាតិដោះស្រាយវិវាទក្រៅប្រព័ន្ធតុលាការ។'
+        ]
+      },
+      '/mef': {
+        name: 'ក្រសួងសេដ្ឋកិច្ច និងហិរញ្ញវត្ថុ',
+        khmerCode: 'ស.ហ.វ',
+        website: 'https://www.mef.gov.kh',
+        hotline: '០២៣ ៨៩០ ៦៦៦',
+        mandate: 'គ្រប់គ្រងគោលនយោបាយសេដ្ឋកិច្ច និងហិរញ្ញវត្ថុសាធារណៈ រៀបចំថវិកាជាតិ និងដឹកនាំកំណែទម្រង់ការគ្រប់គ្រងហិរញ្ញវត្ថុសាធារណៈ (PFMRP)។',
+        services: [
+          'ការគ្រប់គ្រង និងតាមដានការអនុវត្តថវិកាជាតិ ប្រកបដោយតម្លាភាព និងប្រសិទ្ធភាព។',
+          'ការចុះបញ្ជីអាជីវកម្មតាមថ្នាលបច្ចេកវិទ្យាព័ត៌មាន (CamDX Single Portal)។'
+        ]
+      },
+      '/tax': {
+        name: 'អគ្គនាយកដ្ឋានពន្ធដារ',
+        khmerCode: 'ព.ដ',
+        website: 'https://www.tax.gov.kh',
+        hotline: '១២៨៨ (Call Center) | ០២៣ ៨៨៦ ៧៨៩',
+        mandate: 'គ្រប់គ្រង និងប្រមូលពន្ធផ្ទៃក្នុងគ្រប់ប្រភេទជូនរដ្ឋ ស្របតាមច្បាប់ស្តីពីសារពើពន្ធ និងពង្រឹងតម្លាភាពតាមប្រព័ន្ធពន្ធដារអេឡិចត្រូនិក។',
+        services: [
+          'ការប្រកាសពន្ធតាមប្រព័ន្ធអេឡិចត្រូនិក (E-Filing / GDT Tax Prefiling)។',
+          'ការបង់ពន្ធលើអចលនទ្រព្យ និងពន្ធផ្លូវយានយន្តតាម GDT Taxpayer App។'
+        ]
+      },
+      '/customs': {
+        name: 'អគ្គនាយកដ្ឋានគយ និងរដ្ឋាករ',
+        khmerCode: 'គ.រ',
+        website: 'https://www.customs.gov.kh',
+        hotline: '១២០៩ (គយ) | ០២៣ ២១៤ ០៦៥',
+        mandate: 'គ្រប់គ្រងការប្រមូលពន្ធគយ និងរដ្ឋាករលើទំនិញនាំចេញ-នាំចូល និងទប់ស្កាត់ការរត់ពន្ធខុសច្បាប់។',
+        services: [
+          'ប្រព័ន្ធស្វ័យប្រវត្តិកម្មគយ ASYCUDA World និងប្រព័ន្ធបញ្ជរតែមួយជាតិ (National Single Window)។'
+        ]
+      },
+      '/police': {
+        name: 'អគ្គស្នងការដ្ឋាននគរបាលជាតិ',
+        khmerCode: 'ន.ជ',
+        website: 'https://police.gov.kh',
+        hotline: '១១៧ (សង្គ្រោះបន្ទាន់) | ០២៣ ២១២ ១១៥',
+        mandate: 'ថែរក្សាសន្តិសុខផ្ទៃក្នុង សណ្តាប់ធ្នាប់សាធារណៈ សុវត្ថិភាពចរាចរណ៍ និងបង្ក្រាបរាល់បទល្មើសព្រហ្មទណ្ឌ និងគ្រឿងញៀន។',
+        services: [
+          'ការអន្តរាគមន៍បន្ទាន់ ២៤ ម៉ោងលើ ២៤ ម៉ោង តាមរយៈលេខកូដសង្គ្រោះ ១១៧។',
+          'ការអនុវត្តច្បាប់ចរាចរណ៍ផ្លូវគោក និងការផាកពិន័យតាមវិក្កយបត្រផ្លូវការរបស់រដ្ឋ។'
+        ]
+      },
+      '/acu': {
+        name: 'អង្គភាពប្រឆាំងអំពើពុករលួយ',
+        khmerCode: 'អ.ប.ព',
+        website: 'https://www.acu.gov.kh',
+        hotline: '១២៨២ (Hotline ឥតគិតថ្លៃ) | ០២៣ ៩៩៦ ៦៦៦',
+        mandate: 'ទប់ស្កាត់ បង្ការ និងបង្ក្រាបអំពើពុករលួយគ្រប់រូបភាព តាមដានការប្រកាសទ្រព្យសម្បត្តិ និងបំណុលរបស់មន្ត្រីសាធារណៈ។',
+        services: [
+          'ការទទួលពាក្យបណ្តឹងសម្ងាត់ពីប្រជាពលរដ្ឋ ២៤/៧។',
+          'យន្តការការពារសុវត្ថិភាព និងអត្តសញ្ញាណអ្នករាយការណ៍ ១០០% តាមច្បាប់។'
+        ]
+      },
+      '/mlmupc': {
+        name: 'ក្រសួងរៀបចំដែនដី នគរូបនីយកម្ម និងសំណង់',
+        khmerCode: 'ដ.ន.ស',
+        website: 'https://www.mlmupc.gov.kh',
+        hotline: '០២៣ ២១៥ ៥៤៥',
+        mandate: 'គ្រប់គ្រងការរៀបចំដែនដី នគរូបនីយកម្ម ការចុះបញ្ជីដីធ្លី និងការចេញប័ណ្ណកម្មសិទ្ធិ (ប្លង់រឹង)។',
+        services: [
+          'ការចុះបញ្ជីដីធ្លីមានលក្ខណៈជាប្រព័ន្ធ និងដាច់ដោយដុំ។',
+          'ការផ្សះផ្សាវិវាទដីធ្លីក្រៅប្រព័ន្ធតុលាការតាមគណៈកម្មការសុរិយោដី។'
+        ]
+      },
+      '/phnompenh': {
+        name: 'រដ្ឋបាលរាជធានីភ្នំពេញ',
+        khmerCode: 'រ.ភ.ព',
+        website: 'https://phnompenh.gov.kh',
+        hotline: '១២៩៩ | ០២៣ ៧២២ ០៥៤',
+        mandate: 'ដឹកនាំរដ្ឋបាលដែនដីរាជធានីភ្នំពេញ ការអភិវឌ្ឍហេដ្ឋារចនាសម្ព័ន្ធទីក្រុង អនាម័យបរិស្ថាន និងសេវាសាធារណៈជូនពលរដ្ឋក្នុងរាជធានី។',
+        services: [
+          'ការិយាល័យច្រកចេញចូលតែមួយ (OWSO) សាលារាជធានីភ្នំពេញ និងខណ្ឌទាំង ១៤។'
+        ]
+      }
+    };
+
+    return map[cmd] || {
+      name: this.getInstitutionNameKhmer(cmd),
+      khmerCode: cmd.replace('/', '').toUpperCase(),
+      website: `https://www.${cmd.replace('/', '')}.gov.kh`,
+      hotline: '១១៧ (នគរបាលជាតិ) | ១២៨២ (ACU)',
+      mandate: `ដឹកនាំ គ្រប់គ្រង និងអនុវត្តគោលនយោបាយរាជរដ្ឋាភិបាលក្នុងដែនសមត្ថកិច្ចរបស់ ${this.getInstitutionNameKhmer(cmd)}។`,
+      services: [
+        'ការិយាល័យច្រកចេញចូលតែមួយ (OWSO) ៖ បម្រើសេវាសាធារណៈប្រកបដោយតម្លាភាព និងគ្មានអំពើពុករលួយ។'
+      ]
+    };
   }
 
   private static getInstitutionNameKhmer(agentCommand: string): string {
