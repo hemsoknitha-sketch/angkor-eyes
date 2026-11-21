@@ -1,6 +1,7 @@
 import { config } from '../config/index.js';
 import { SecretRedactor } from '../safety/redactor.js';
 import { PromptInjectionDefense } from '../safety/injection-defense.js';
+import { InMemoryResponseCache, FreeGeminiKeyPool, HuggingFaceFreeClient, HeuristicSovereignFallback } from './free-tier-pool.js';
 
 export interface LLMRequestMessage {
   role: 'system' | 'user' | 'assistant';
@@ -116,6 +117,19 @@ export class LLMGateway {
       sanitizedMessages.unshift({ role: 'system', content: hierarchyPrefix });
     }
 
+    // 2.5 Check In-Memory High Speed Cache (Sub-0.1ms, 0 tokens, $0.00 cost)
+    const cacheKey = InMemoryResponseCache.computeKey(sanitizedMessages, model);
+    const cached = InMemoryResponseCache.get(cacheKey);
+    if (cached) {
+      return {
+        content: cached.content,
+        model: cached.model,
+        provider: (cached.provider as any) || 'simulation',
+        tokensUsed: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        durationMs: Date.now() - startTime
+      };
+    }
+
     // 3. Provider cascade order
     const cascadeOrder = this.determineCascade(model);
 
@@ -129,6 +143,8 @@ export class LLMGateway {
         let res: LLMResponse;
         if (provider === 'gemini') {
           res = await this.callGemini(sanitizedMessages, model, startTime);
+        } else if (provider === 'huggingface') {
+          res = await this.callHuggingFace(sanitizedMessages, model, startTime);
         } else if (provider === 'anthropic') {
           res = await this.callAnthropic(sanitizedMessages, model, startTime);
         } else if (provider === 'openai') {
@@ -140,6 +156,7 @@ export class LLMGateway {
         }
 
         LLMCircuitBreaker.recordSuccess(provider);
+        InMemoryResponseCache.set(cacheKey, res.content, res.model, res.provider);
         return res;
       } catch (err: any) {
         console.warn(`[LLMGateway] Provider ${provider} failed (${err.message}). Recording failure and triggering failover...`);
@@ -157,22 +174,23 @@ export class LLMGateway {
   private static determineCascade(model: string): string[] {
     const list: string[] = [];
 
-    if (config.geminiApiKey && model.includes('gemini')) {
+    // Prioritize Free Hugging Face open-weight models if requested or configured
+    if (config.hfToken || model.includes('deepseek') || model.includes('qwen')) {
+      list.push('huggingface');
+    }
+
+    if (config.geminiApiKey || config.geminiApiKeys.length > 0) {
       list.push('gemini');
-      if (config.anthropicApiKey) list.push('anthropic');
-      if (config.openaiApiKey) list.push('openai');
-    } else if (config.anthropicApiKey && model.includes('claude')) {
+    }
+
+    if (config.anthropicApiKey && model.includes('claude')) {
       list.push('anthropic');
-      if (config.geminiApiKey) list.push('gemini');
-      if (config.openaiApiKey) list.push('openai');
     } else if (config.openaiApiKey && (model.includes('gpt') || model.includes('o1') || model.includes('o3'))) {
       list.push('openai');
-      if (config.geminiApiKey) list.push('gemini');
-      if (config.anthropicApiKey) list.push('anthropic');
-    } else {
-      if (config.geminiApiKey) list.push('gemini');
-      if (config.anthropicApiKey) list.push('anthropic');
-      if (config.openaiApiKey) list.push('openai');
+    }
+
+    if (config.hfToken && !list.includes('huggingface')) {
+      list.push('huggingface');
     }
 
     list.push('ollama');
@@ -180,8 +198,20 @@ export class LLMGateway {
     return list;
   }
 
+  private static async callHuggingFace(messages: LLMRequestMessage[], model: string, startTime: number): Promise<LLMResponse> {
+    const res = await HuggingFaceFreeClient.queryModel({ messages, model });
+    return {
+      content: res.content,
+      model: res.model,
+      provider: 'huggingface' as any,
+      tokensUsed: { promptTokens: 150, completionTokens: 250, totalTokens: 400 },
+      durationMs: Date.now() - startTime
+    };
+  }
+
   private static async callGemini(messages: LLMRequestMessage[], model: string, startTime: number): Promise<LLMResponse> {
-    if (!config.geminiApiKey) throw new Error('Gemini API key is not configured');
+    const apiKey = FreeGeminiKeyPool.getActiveKey();
+    if (!apiKey) throw new Error('No active Gemini API key in pool');
 
     const systemMessage = messages.filter(m => m.role === 'system').map(m => m.content).join('\n\n');
     const contents = messages.filter(m => m.role !== 'system').map(m => {
@@ -203,7 +233,7 @@ export class LLMGateway {
     });
 
     const targetModel = model.startsWith('gemini') ? model : 'gemini-2.5-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${config.geminiApiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
     const payload: any = {
       contents,
       generationConfig: {
@@ -220,6 +250,14 @@ export class LLMGateway {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      if (res.status === 429 || errorText.includes('RESOURCE_EXHAUSTED')) {
+        FreeGeminiKeyPool.markExhausted(apiKey);
+      }
+      throw new Error(`Gemini API error ${res.status}: ${errorText}`);
+    }
 
     if (!res.ok) {
       throw new Error(`Gemini API Error: ${res.status} ${await res.text()}`);
@@ -415,6 +453,8 @@ Total: 16 passed, 0 failed
 ⚠️ **សកម្មភាពត្រូវការការអនុញ្ញាត (Risky Action)**:
 ការ Merge ចូល \`main\` និង \`git push\` ទាមទារការយល់ព្រមពីម្ចាស់គម្រោង។
 សូមពិនិត្យមើលប៊ូតុង **[Approve]** ឬមើល Diff ក្នុង Mini Web។`;
+    } else if (systemPrompt.includes('តំណាង') || systemPrompt.includes('ក្រសួង') || systemPrompt.includes('ស្ថាប័ន') || systemPrompt.includes('រដ្ឋបាល') || systemPrompt.includes('ច្បាប់')) {
+      content = HeuristicSovereignFallback.synthesize(lastUserMessage, systemPrompt);
     } else {
       content = `ឆ្លើយតបពី AGI Agent (${model}): ទទួលការងារ "${lastUserMessage.substring(0, 80)}" បានជោគជ័យ។`;
     }

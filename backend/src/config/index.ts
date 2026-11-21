@@ -38,6 +38,10 @@ export interface AppConfig {
   redisUrl: string;
   runnerToken: string;
   geminiApiKey: string;
+  geminiApiKeys: string[];
+  hfToken: string;
+  hfModel: string;
+  cacheTtlSeconds: number;
   anthropicApiKey: string;
   openaiApiKey: string;
   ollamaBaseUrl: string;
@@ -54,6 +58,11 @@ const parseAllowedIds = (raw: string | undefined): number[] => {
   return raw.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
 };
 
+const parseStringList = (raw: string | undefined): string[] => {
+  if (!raw) return [];
+  return raw.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, '')).filter(s => s.length > 5);
+};
+
 export const config: AppConfig = {
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
@@ -64,6 +73,10 @@ export const config: AppConfig = {
   redisUrl: process.env.REDIS_URL || '',
   runnerToken: process.env.RUNNER_TOKEN || 'angkor-runner-token-secure-key',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+  geminiApiKeys: parseStringList(process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY),
+  hfToken: process.env.HF_TOKEN || '',
+  hfModel: process.env.HF_MODEL || 'deepseek-ai/DeepSeek-R1',
+  cacheTtlSeconds: parseInt(process.env.CACHE_TTL_SECONDS || '900', 10),
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
