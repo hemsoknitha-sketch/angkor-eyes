@@ -319,6 +319,39 @@ export class TelegramBotEngine {
       }
     });
 
+    // /live command - check autonomous 24/7 radar activity & live messages
+    bot.command('live', async (ctx) => {
+      const { AutonomousNewsRadarEngine } = await import('../cambodia/autonomous-news-radar.js');
+      const count = AutonomousNewsRadarEngine.getProcessedCount();
+      const messages = db.getMessages('room-cabinet-council', 5);
+      const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+
+      let text = `📡 **ស្ថានភាព AGI ៧៨ AGENTS LIVE 24/7 STREAMING**\n\n` +
+        `• 🔄 **វដ្តជជែកដេញដោលស្វ័យប្រវត្តិ** ៖ រៀងរាល់ ៣ នាទីម្តង (Active 24/7)\n` +
+        `• 📊 **ប្រធានបទក្តៅបានជជែករួច** ៖ ${count} ប្រធានបទ\n` +
+        `• 🏛️ **បន្ទប់ប្រជុំកំពូល** ៖ \`room-cabinet-council\`\n` +
+        `• ⚡ **តម្លៃសេវា** ៖ $0.00 Free Tier (Real-Time)\n\n` +
+        `🔥 **កិច្ចពិភាក្សាចុងក្រោយបង្អស់** ៖\n`;
+
+      if (messages.length > 0) {
+        messages.slice(-3).forEach(m => {
+          text += `👉 **${m.agentName || 'Agent'}** ៖\n${m.content.slice(0, 180)}...\n\n`;
+        });
+      } else {
+        text += `_ប្រព័ន្ធកំពុងដំណើរការស្កេនជាបន្តបន្ទាប់..._\n\n`;
+      }
+
+      const kb = new InlineKeyboard();
+      if (liveUrl && liveUrl.startsWith('https://')) {
+        kb.webApp('🌐 មើលការជជែក Live លើ Mini Web', liveUrl).row();
+      }
+      kb.text('⚡ កោះប្រជុំភ្លាមៗ', 'debate:online_scams')
+        .row()
+        .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+      await ctx.reply(text, { reply_markup: kb, parse_mode: 'Markdown' });
+    });
+
     // /angkor_eyes Supreme Commander Command
     bot.command('angkor_eyes', async (ctx) => {
       const agents = db.getAgents();

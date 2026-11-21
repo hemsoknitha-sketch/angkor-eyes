@@ -21,19 +21,19 @@ export class AutonomousNewsRadarEngine {
   /**
    * Initializes the 24/7 background radar daemon.
    */
-  public static initialize(intervalMinutes: number = 60): void {
+  public static initialize(intervalMinutes: number = 3): void {
     if (this.timer) clearInterval(this.timer);
 
     console.log(`[AutonomousNewsRadar] Initializing 24/7 National Breaking Issues Radar (Interval: ${intervalMinutes}m).`);
 
-    // First scan after 15 seconds to allow full service boot
+    // First scan after 3 seconds to immediately populate live discussions
     setTimeout(() => {
       this.scanAndDebate().catch((err) => {
         console.warn('[AutonomousNewsRadar] Initial scan warning:', err.message);
       });
-    }, 15000);
+    }, 3000);
 
-    // Periodic interval
+    // Periodic interval (every 3 minutes)
     this.timer = setInterval(() => {
       this.scanAndDebate().catch((err) => {
         console.warn('[AutonomousNewsRadar] Periodic scan warning:', err.message);

@@ -56,7 +56,7 @@ async function bootstrap() {
   // 5. Initialize Telegram Bot, Cron Scheduler & 24/7 Autonomous News Radar
   TelegramBotEngine.initialize();
   CronScheduler.initialize();
-  AutonomousNewsRadarEngine.initialize(60);
+  AutonomousNewsRadarEngine.initialize(3);
 
   // Graceful shutdown
   const shutdown = () => {

@@ -29,8 +29,12 @@ export class HttpApiServer {
         this.webClients.delete(ws);
       });
 
-      // Send initial hello
-      ws.send(JSON.stringify({ type: 'CONNECTED', timestamp: new Date().toISOString() }));
+      // Send initial hello and historical debate messages so client immediately sees active discussions
+      const debateHistory = db.getMessages('room-cabinet-council', 30);
+      ws.send(JSON.stringify({
+        type: 'INITIAL_MESSAGES',
+        messages: debateHistory.length > 0 ? debateHistory : db.getMessages('room-main-squad', 20)
+      }));
     });
 
     // Register TurnCoordinator real-time callbacks
