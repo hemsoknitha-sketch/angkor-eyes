@@ -80,10 +80,23 @@ export class KhmerLanguageAuditor {
     text = text.replace(/(សម្តេច(?:អគ្គមហាសេនាបតីតេជោ|មហាបវរធិបតី|ក្រឡាហោម|ពិជ័យសេនា)?)\s*([ក-អ])/g, '$1 $2');
     text = text.replace(/(ឯកឧត្តម|លោកជំទាវ)\s*([ក-អ])/g, '$1 $2');
 
+    // 4.5. Protect URLs, web domains, and email addresses from punctuation replacement
+    const urlPlaceholders: string[] = [];
+    text = text.replace(/https?:\/\/[^\s\)\<\>]+|www\.[^\s\)\<\>]+|[a-zA-Z0-9_\-\.]+\.(?:gov\.kh|org\.kh|edu\.kh|com\.kh|gov|org|com|net|io)[^\s\)\<\>]*/gi, (match) => {
+      const token = `___URL_PROTECTED_${urlPlaceholders.length}___`;
+      urlPlaceholders.push(match);
+      return token;
+    });
+
     // 5. Punctuation & Orthographic cleanup
     for (const [regex, replacement] of this.punctuationReplacements) {
       text = text.replace(regex, replacement);
     }
+
+    // Restore protected URLs and domains exactly as they were
+    urlPlaceholders.forEach((url, i) => {
+      text = text.replace(new RegExp(`___URL_PROTECTED_${i}___`, 'g'), url);
+    });
 
     // Enforce final closing ' ៕' for official statements
     text = text.trim();
