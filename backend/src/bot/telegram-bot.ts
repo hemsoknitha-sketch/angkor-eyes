@@ -1,5 +1,7 @@
 import { Bot, InlineKeyboard } from 'grammy';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { config } from '../config/index.js';
 import { db } from '../db/index.js';
 import { TurnCoordinator } from '../orchestrator/turn-coordinator.js';
@@ -20,6 +22,62 @@ import { InterMinisterialDebateEngine } from '../cambodia/debate-engine.js';
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
   private static processedUpdateIds: Set<number> = new Set();
+
+  /**
+   * Dynamically retrieves the active live WebApp URL from memory, disk logs, or .env
+   */
+  public static getLiveWebAppUrl(): string {
+    if (process.env.WEB_APP_URL && process.env.WEB_APP_URL.startsWith('https://')) {
+      return process.env.WEB_APP_URL.trim();
+    }
+    if (process.env.MINI_APP_URL && process.env.MINI_APP_URL.startsWith('https://')) {
+      return process.env.MINI_APP_URL.trim();
+    }
+
+    const logPaths = [
+      '/var/log/angkor-eyes-tunnel.log',
+      '/var/log/cloudflared.log',
+      '/tmp/cloudflared.log'
+    ];
+    for (const lp of logPaths) {
+      try {
+        if (fs.existsSync(lp)) {
+          const content = fs.readFileSync(lp, 'utf-8');
+          const matches = content.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/g);
+          if (matches && matches.length > 0) {
+            const latest = matches[matches.length - 1];
+            process.env.WEB_APP_URL = latest;
+            return latest;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const envPaths = [
+      '/opt/angkor-eyes/backend/.env',
+      '/opt/angkor-eyes/.env',
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), '../.env')
+    ];
+    for (const ep of envPaths) {
+      try {
+        if (fs.existsSync(ep)) {
+          const text = fs.readFileSync(ep, 'utf-8');
+          const match = text.match(/^WEB_APP_URL=(https:\/\/[^\r\n]+)/m);
+          if (match && match[1]) {
+            process.env.WEB_APP_URL = match[1].trim();
+            return match[1].trim();
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return '';
+  }
 
   public static initialize(): Bot | null {
     if (!config.telegramBotToken) {
@@ -65,7 +123,8 @@ export class TelegramBotEngine {
 
     // Helper for main menu keyboard
     const buildMainMenuKeyboard = () => {
-      return new InlineKeyboard()
+      const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+      const kb = new InlineKeyboard()
         .text('🏛️ ស្ថាប័នកំពូលជាតិ', 'menu_top')
         .text('🏢 ក្រសួងទាំង ២៨', 'menu_ministries')
         .row()
@@ -74,9 +133,15 @@ export class TelegramBotEngine {
         .row()
         .text('🔥 ប្រធានបទក្តៅ & Debate', 'menu_debate')
         .text('⚖️ សវនកម្មច្បាប់', 'menu_legal')
-        .row()
-        .text('🌐 បើក Sovereign Mini Web', 'open_web')
-        .text('📊 ស្ថានភាពប្រព័ន្ធ', 'menu_status');
+        .row();
+
+      if (liveUrl && liveUrl.startsWith('https://')) {
+        kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl);
+      } else {
+        kb.text('🌐 បើក Sovereign Mini Web', 'open_web');
+      }
+      kb.text('📊 ស្ថានភាពប្រព័ន្ធ', 'menu_status');
+      return kb;
     };
 
     const getMainMenuText = () => {
@@ -167,25 +232,74 @@ export class TelegramBotEngine {
 
     // /web command
     bot.command('web', async (ctx) => {
-      const miniAppUrl = process.env.WEB_APP_URL || process.env.MINI_APP_URL || '';
+      const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
       const keyboard = new InlineKeyboard();
-      if (miniAppUrl && miniAppUrl.startsWith('https://')) {
-        keyboard.webApp('🚀 បើក Sovereign Mini Web ឥឡូវនេះ', miniAppUrl).row();
+      if (liveUrl && liveUrl.startsWith('https://')) {
+        keyboard.webApp('🚀 បើក Sovereign Mini Web ឥឡូវនេះ', liveUrl).row();
       }
       keyboard
         .text('🔄 ពិនិត្យការតភ្ជាប់ Live', 'check_connection')
         .row()
         .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
 
-      await ctx.reply(
-        `🌐 **ANGKOR EYES SOVEREIGN MINI WEB COMMAND CENTER**\n\n` +
+      let webText = `🌐 **ANGKOR EYES SOVEREIGN MINI WEB COMMAND CENTER**\n\n` +
         `• ផ្ទាំងគ្រប់គ្រងរដ្ឋបាលឌីជីថលបែប Futuristic Dark Mode\n` +
         `• មើលការជជែកដេញដោលផ្ទាល់តាម WebSockets (Real-Time)\n` +
         `• បញ្ជី AGI Agents ទាំង ៧៨ និងការអនុញ្ញាតសកម្មភាពហានិភ័យ (Approvals)\n\n` +
-        `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n` +
-        (miniAppUrl ? `• 🔗 **Cloudflare HTTPS Live** ៖ \`${miniAppUrl}\`\n` : `• 🔗 **Cloudflare HTTPS Tunnel** ៖ \`https://<your-tunnel>.trycloudflare.com\`\n`) +
-        `• 🖥️ **តាម Local Network** ៖ \`http://localhost:3000\``,
-        { reply_markup: keyboard, parse_mode: 'Markdown' }
+        `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n`;
+
+      if (liveUrl && liveUrl.startsWith('https://')) {
+        webText += `• 🔗 **Cloudflare HTTPS Live** ៖ \`${liveUrl}\`\n`;
+      } else {
+        webText += `• 🔗 **Cloudflare HTTPS Tunnel** ៖ មិនទាន់ភ្ជាប់ (វាយ \`/set_web <url>\` ឬរត់ \`setup_cloudflare_tunnel.sh\` លើ VPS)\n`;
+      }
+      webText += `• 🖥️ **តាម Local Network** ៖ \`http://localhost:3000\``;
+
+      await ctx.reply(webText, { reply_markup: keyboard, parse_mode: 'Markdown' });
+    });
+
+    // /set_web command - manually configure active Mini Web URL from Telegram
+    bot.command('set_web', async (ctx) => {
+      const url = ctx.match ? ctx.match.trim() : '';
+      if (!url || !url.startsWith('https://')) {
+        await ctx.reply(
+          `⚠️ **សូមបញ្ជាក់អាសយដ្ឋាន HTTPS ត្រឹមត្រូវ** ៖\n` +
+          `ឧទាហរណ៍ ៖ \`/set_web https://xxxx.trycloudflare.com\``,
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      process.env.WEB_APP_URL = url;
+
+      // Persist to .env on disk if accessible
+      try {
+        const envTargets = ['/opt/angkor-eyes/backend/.env', '/opt/angkor-eyes/.env'];
+        for (const ep of envTargets) {
+          if (fs.existsSync(ep)) {
+            let envContent = fs.readFileSync(ep, 'utf-8');
+            if (envContent.includes('WEB_APP_URL=')) {
+              envContent = envContent.replace(/^WEB_APP_URL=.*$/m, `WEB_APP_URL=${url}`);
+            } else {
+              envContent += `\nWEB_APP_URL=${url}\n`;
+            }
+            fs.writeFileSync(ep, envContent, 'utf-8');
+          }
+        }
+      } catch (err: any) {
+        console.warn('[TelegramBot] Could not persist WEB_APP_URL:', err.message);
+      }
+
+      const kb = new InlineKeyboard()
+        .webApp('🚀 បើក Sovereign Mini Web ឥឡូវនេះ', url)
+        .row()
+        .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+      await ctx.reply(
+        `✅ **បានកំណត់អាសយដ្ឋាន Web App ដោយជោគជ័យ!**\n\n` +
+        `🔗 URL ៖ \`${url}\`\n\n` +
+        `ប៊ូតុងទាំងអស់ត្រូវបានតភ្ជាប់ជាមួយផ្ទាំង Mini Web នេះដោយស្វ័យប្រវត្តិ។`,
+        { reply_markup: kb, parse_mode: 'Markdown' }
       );
     });
 
@@ -666,17 +780,31 @@ export class TelegramBotEngine {
       }
 
       if (data === 'open_web') {
-        await ctx.answerCallbackQuery({ text: 'សូមបើក Mini Web តាម Browser ឬ Cloudflare HTTPS' });
-        await ctx.reply(
-          `🌐 **ANGKOR EYES Sovereign Mini Web Command Center**\n\n` +
+        await ctx.answerCallbackQuery();
+        const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+        const kb = new InlineKeyboard();
+        if (liveUrl && liveUrl.startsWith('https://')) {
+          kb.webApp('🚀 បើកផ្ទាំងគ្រប់គ្រង Mini Web ឥឡូវនេះ', liveUrl).row();
+        }
+        kb.text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        let msg = `🌐 **ANGKOR EYES SOVEREIGN MINI WEB COMMAND CENTER**\n\n` +
           `• ផ្ទាំងគ្រប់គ្រងរដ្ឋបាលឌីជីថលបែប Futuristic Dark Mode\n` +
           `• មើលការជជែកដេញដោលផ្ទាល់តាម WebSockets (Real-Time)\n` +
           `• បញ្ជី AGI Agents ទាំង ៧៨ និងការអនុញ្ញាតសកម្មភាពហានិភ័យ (Approvals)\n\n` +
-          `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n` +
-          `• តាម Local ៖ \`http://localhost:3000\`\n` +
-          `• តាម Cloudflare HTTPS ៖ \`https://<your-tunnel>.trycloudflare.com\``,
-          { parse_mode: 'Markdown' }
-        );
+          `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n`;
+
+        if (liveUrl && liveUrl.startsWith('https://')) {
+          msg += `• 🔗 **Cloudflare HTTPS Live** ៖ \`${liveUrl}\`\n\n` +
+            `💡 *សូមចុចប៊ូតុងខាងក្រោមដើម្បីបើក Mini Web ផ្ទាល់ ៖*`;
+        } else {
+          msg += `• 🔗 **Cloudflare HTTPS Tunnel** ៖ មិនទាន់ភ្ជាប់\n\n` +
+            `💡 *បងអាចកំណត់ URL ភ្លាមៗដោយគ្រាន់តែវាយ ៖*\n` +
+            `\`/set_web https://xxxx.trycloudflare.com\`\n` +
+            `*(ឬរត់លើ VPS: \`sudo bash scripts/setup_cloudflare_tunnel.sh\`)*`;
+        }
+
+        await ctx.reply(msg, { reply_markup: kb, parse_mode: 'Markdown' });
         return;
       }
     });
