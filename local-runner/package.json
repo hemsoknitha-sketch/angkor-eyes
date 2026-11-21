@@ -1,0 +1,25 @@
+{
+  "name": "angkor-eyes-local-runner",
+  "version": "1.0.0",
+  "description": "ANGKOR EYES Local Runner Daemon - Git Worktrees & Sandboxed Tool Executor",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2",
+    "ws": "^8.18.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/ws": "^8.5.14",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

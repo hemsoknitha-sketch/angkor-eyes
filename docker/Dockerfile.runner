@@ -1,0 +1,21 @@
+FROM node:22-alpine
+
+# Install git, python3, bash, and build tools
+RUN apk add --no-cache git python3 py3-pip bash make g++
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY local-runner/package*.json ./local-runner/
+
+WORKDIR /app/local-runner
+RUN npm install
+
+WORKDIR /app
+COPY local-runner ./local-runner
+
+# Run as non-root user for security isolation
+USER node
+
+WORKDIR /app/local-runner
+CMD ["npm", "start"]

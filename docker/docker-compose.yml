@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: angkor-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: angkor_eyes
+      POSTGRES_USER: angkor
+      POSTGRES_PASSWORD: angkor_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U angkor -d angkor_eyes"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: angkor-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: angkor-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://angkor:angkor_secret_password@postgres:5432/angkor_eyes
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      ALLOWED_TELEGRAM_IDS: ${ALLOWED_TELEGRAM_IDS:-}
+      RUNNER_TOKEN: ${RUNNER_TOKEN:-angkor-runner-token-secure-key}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../data:/app/data
+
+volumes:
+  pgdata:
+  redisdata:

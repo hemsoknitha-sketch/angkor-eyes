@@ -1,0 +1,29 @@
+{
+  "name": "angkor-eyes",
+  "version": "1.0.0",
+  "description": "ANGKOR EYES - Autonomous Multi-Agent AGI Platform with Telegram Mini Web & Local Runner",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "local-runner",
+    "web"
+  ],
+  "scripts": {
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && npm run start",
+    "start:runner": "cd local-runner && npm run start",
+    "start:web": "cd web && npm run dev",
+    "build": "npm run build --workspaces",
+    "test": "node --loader ./scripts/ts-loader.mjs --test backend/tests/security-suite.test.ts"
+  },
+  "keywords": [
+    "agi",
+    "autonomous-agents",
+    "telegram-mini-app",
+    "git-worktree",
+    "angkor-eyes",
+    "multi-agent"
+  ],
+  "author": "ANGKOR EYES Team",
+  "license": "MIT"
+}
