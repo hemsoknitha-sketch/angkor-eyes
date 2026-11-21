@@ -131,7 +131,7 @@ export class TelegramBotEngine {
         .text('👮 សន្តិសុខ & ពន្ធដារ', 'menu_security')
         .text('📍 រាជធានី-ខេត្តទាំង ២៥', 'menu_provinces')
         .row()
-        .text('🔥 ប្រធានបទក្តៅ & Debate', 'menu_debate')
+        .text('🔥 ប្រធានបទក្តៅ & Auto Debate', 'menu_debate')
         .text('⚖️ សវនកម្មច្បាប់', 'menu_legal')
         .row();
 
@@ -148,6 +148,7 @@ export class TelegramBotEngine {
       return `🇰🇭 **ANGKOR EYES — SOVEREIGN INSTITUTIONAL AGI PLATFORM**\n` +
         `*មជ្ឈមណ្ឌលបញ្ជាកំពូល និងប្រព័ន្ធ AGI ស្ថាប័នជាតិទាំង ៧៨ ដំណើរការ ២៤/៧ ៣៦៥ Live Real-Time*\n\n` +
         `👑 **អ្នកគ្រប់គ្រងកំពូល (Supreme Controller)** ៖ \`/angkor_eyes\`\n` +
+        `⚡ **Auto Debate ២៤/៧ Live** ៖ \`/auto_debate\`\n` +
         `💡 សូមជ្រើសរើសផ្នែកខាងក្រោម ដើម្បីបញ្ជាស្ថាប័នរដ្ឋ ឬបើកកិច្ចប្រជុំដោះស្រាយវិបត្តិសង្គម ៖`;
     };
 
@@ -320,6 +321,134 @@ export class TelegramBotEngine {
         `ប៊ូតុងទាំងអស់ត្រូវបានតភ្ជាប់ជាមួយផ្ទាំង Mini Web នេះដោយស្វ័យប្រវត្តិ។`,
         { reply_markup: kb, parse_mode: 'Markdown' }
       );
+    });
+
+    // /auto_debate command - 24/7 Autonomous Inter-Ministerial Debate Controller
+    bot.command(['auto_debate', 'autodebate'], async (ctx) => {
+      const match = ctx.match ? ctx.match.trim().toLowerCase() : '';
+      const chatId = ctx.chat?.id;
+
+      const { AutonomousNewsRadarEngine } = await import('../cambodia/autonomous-news-radar.js');
+
+      if (match === 'on' || match === 'start' || match === 'enable') {
+        AutonomousNewsRadarEngine.enable();
+        if (chatId) AutonomousNewsRadarEngine.addSubscriber(chatId);
+
+        await ctx.reply(
+          `🟢 **ប្រព័ន្ធ AGI ៧៨ ស្ថាប័ន AUTO DEBATE ២៤/៧ ត្រូវបានបើកដំណើរការ (ENABLED)!**\n\n` +
+          `• 📡 **វដ្តជជែកដេញដោល** ៖ រៀងរាល់ ${AutonomousNewsRadarEngine.getIntervalMinutes()} នាទីម្តង (Auto Scan & Stream)\n` +
+          `• 💬 **Bot Chat Streaming** ៖ នឹងបញ្ជូនសារដេញដោលផ្ទាល់ចូលក្នុង Chat នេះ\n` +
+          `• 🌐 **Sovereign Mini Web** ៖ កំពុងផ្សាយផ្ទាល់ Real-Time តាម WebSockets ២៤/៧\n\n` +
+          `⚡ *ប្រព័ន្ធកំពុងកោះប្រជុំបន្ទាន់ Live លើប្រធានបទដំបូងជូនឥឡូវនេះ...*`,
+          { parse_mode: 'Markdown' }
+        );
+
+        // Kick off immediate live debate with one-by-one streaming
+        await AutonomousNewsRadarEngine.triggerLiveDebate({
+          initiatedBy: ctx.from?.first_name || 'Super Admin',
+          onStatement: async (stmt, isFinalReport) => {
+            if (isFinalReport) {
+              const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+              const kb = new InlineKeyboard();
+              if (liveUrl && liveUrl.startsWith('https://')) {
+                kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+              }
+              kb.text('⚡ កោះប្រជុំបន្ទាប់ភ្លាមៗ', 'auto_debate:now')
+                .row()
+                .text('🔴 ផ្អាក Auto Debate', 'auto_debate:stop');
+
+              await ctx.reply(stmt.statement, { parse_mode: 'Markdown', reply_markup: kb });
+            } else {
+              const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+              await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+            }
+          }
+        });
+        return;
+      }
+
+      if (match === 'off' || match === 'stop' || match === 'disable') {
+        AutonomousNewsRadarEngine.disable();
+        if (chatId) AutonomousNewsRadarEngine.removeSubscriber(chatId);
+        await ctx.reply(
+          `🔴 **ប្រព័ន្ធ AUTO DEBATE ២៤/៧ ត្រូវបានផ្អាកបណ្តោះអាសន្ន (PAUSED)**\n\n` +
+          `💡 វាយ \`/auto_debate on\` ដើម្បីដំណើរការឡើងវិញនៅពេលណាដែលបងត្រូវការ ៕`,
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      if (match.startsWith('interval')) {
+        const parts = match.split(/\s+/);
+        const mins = parseInt(parts[1], 10);
+        if (!isNaN(mins) && mins >= 1 && mins <= 60) {
+          AutonomousNewsRadarEngine.setIntervalMinutes(mins);
+          await ctx.reply(`⏱️ **បានកំណត់វដ្ត Auto Debate ៖ រៀងរាល់ ${mins} នាទីម្តង!**`);
+          return;
+        }
+      }
+
+      if (match === 'now' || match === 'run') {
+        await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live ឥឡូវនេះ...**\n*Rex Lead Orchestrator កំពុងសម្របសម្រួល និងស្រង់ចម្លើយពីស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
+        await AutonomousNewsRadarEngine.triggerLiveDebate({
+          initiatedBy: ctx.from?.first_name || 'Super Admin',
+          onStatement: async (stmt, isFinalReport) => {
+            if (isFinalReport) {
+              const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+              const kb = new InlineKeyboard();
+              if (liveUrl && liveUrl.startsWith('https://')) {
+                kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+              }
+              kb.text('⚡ ជជែកប្រធានបទបន្ទាប់', 'auto_debate:now')
+                .row()
+                .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+              await ctx.reply(stmt.statement, { parse_mode: 'Markdown', reply_markup: kb });
+            } else {
+              const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+              await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+            }
+          }
+        });
+        return;
+      }
+
+      // Default: Display interactive control dashboard
+      const status = AutonomousNewsRadarEngine.getStatus();
+      const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+      const kb = new InlineKeyboard();
+
+      if (status.isEnabled) {
+        kb.text('🔴 ផ្អាក Auto Debate', 'auto_debate:stop');
+      } else {
+        kb.text('🟢 បើកដំណើរការ ២៤/៧', 'auto_debate:start');
+      }
+      kb.text('⚡ ជជែក Live ភ្លាមៗ', 'auto_debate:now').row();
+
+      kb.text('⏱️ 1 នាទី', 'auto_debate:interval:1')
+        .text('⏱️ 3 នាទី', 'auto_debate:interval:3')
+        .text('⏱️ 5 នាទី', 'auto_debate:interval:5')
+        .row();
+
+      if (liveUrl && liveUrl.startsWith('https://')) {
+        kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+      }
+      kb.text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+      const statusText = `📡 **មជ្ឈមណ្ឌលបញ្ជា AUTO DEBATE ២៤/៧ (24/7 LIVE RADAR & MINI WEB)**\n\n` +
+        `• ស្ថានភាព ៖ ${status.isEnabled ? '🟢 **កំពុងដំណើរការ (RUNNING 24/7)**' : '🔴 **បានផ្អាក (PAUSED)**'}\n` +
+        `• វដ្តជជែក ៖ **រៀងរាល់ ${status.intervalMinutes} នាទីម្តង**\n` +
+        `• ប្រធានបទបានដេញដោលសរុប ៖ **${status.processedCount} ប្រធានបទ**\n` +
+        `• ប្រធានបទចុងក្រោយ ៖ «*${status.lastTopic || 'វិធានការសន្តិសុខ និងសេវាសាធារណៈ'}*»\n` +
+        `• Mini Web WebSocket ៖ 🟢 **Real-Time Streaming Active**\n\n` +
+        `👉 **ពាក្យបញ្ជារហ័ស** ៖\n` +
+        `• \`/auto_debate on\` ៖ បើកដំណើរការ ២៤/៧ & Live ក្នុង Chat នេះ\n` +
+        `• \`/auto_debate off\` ៖ ផ្អាកការជជែកស្វ័យប្រវត្តិ\n` +
+        `• \`/auto_debate now\` ៖ កោះប្រជុំដេញដោល Live ភ្លាមៗ\n` +
+        `• \`/auto_debate interval 5\` ៖ កំណត់រៀងរាល់ ៥ នាទីម្តង\n\n` +
+        `*សូមជ្រើសរើសជម្រើសខាងក្រោម ៖*`;
+
+      await ctx.reply(statusText, { reply_markup: kb, parse_mode: 'Markdown' });
     });
 
     // /scan_news command - trigger immediate autonomous scan and debate
@@ -744,6 +873,8 @@ export class TelegramBotEngine {
       if (data === 'menu_debate') {
         await ctx.answerCallbackQuery();
         const kb = new InlineKeyboard()
+          .text('⚡ មជ្ឈមណ្ឌល AUTO DEBATE ២៤/៧ Live', 'auto_debate:status')
+          .row()
           .text('🛡️ បង្ក្រាបឆបោកអនឡាញ & ល្បែង', 'debate:online_scams')
           .row()
           .text('⚖️ ដោះស្រាយវិវាទដីធ្លី & ប្លង់រឹង', 'debate:land_dispute')
@@ -761,6 +892,103 @@ export class TelegramBotEngine {
           { reply_markup: kb, parse_mode: 'Markdown' }
         );
         return;
+      }
+
+      if (data.startsWith('auto_debate:')) {
+        const { AutonomousNewsRadarEngine } = await import('../cambodia/autonomous-news-radar.js');
+        const action = data.replace('auto_debate:', '');
+        const chatId = ctx.chat?.id;
+
+        if (action === 'start') {
+          AutonomousNewsRadarEngine.enable();
+          if (chatId) AutonomousNewsRadarEngine.addSubscriber(chatId);
+          await ctx.answerCallbackQuery({ text: '🟢 Auto Debate 24/7 Enabled!' });
+          await ctx.reply(`🟢 **បានបើកដំណើរការ Auto Debate ២៤/៧ ដោយជោគជ័យ!**\nវដ្តជជែក ៖ រៀងរាល់ ${AutonomousNewsRadarEngine.getIntervalMinutes()} នាទីម្តង។ ផ្សាយផ្ទាល់លើ Mini Web & Bot Chat។`);
+          return;
+        }
+
+        if (action === 'stop') {
+          AutonomousNewsRadarEngine.disable();
+          if (chatId) AutonomousNewsRadarEngine.removeSubscriber(chatId);
+          await ctx.answerCallbackQuery({ text: '🔴 Auto Debate Paused!' });
+          await ctx.reply(`🔴 **បានផ្អាក Auto Debate ២៤/៧ បណ្តោះអាសន្ន!**`);
+          return;
+        }
+
+        if (action === 'now') {
+          await ctx.answerCallbackQuery({ text: '⚡ កំពុងកោះប្រជុំ Live ឥឡូវនេះ...' });
+          await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI ៧៨ ស្ថាប័ន Live...**\n*Rex Lead Orchestrator កំពុងសម្របសម្រួល និងស្រង់ចម្លើយពីស្ថាប័នពាក់ព័ន្ធ...*`, { parse_mode: 'Markdown' });
+          await AutonomousNewsRadarEngine.triggerLiveDebate({
+            initiatedBy: ctx.from?.first_name || 'Super Admin',
+            onStatement: async (stmt, isFinalReport) => {
+              if (isFinalReport) {
+                const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+                const kb = new InlineKeyboard();
+                if (liveUrl && liveUrl.startsWith('https://')) {
+                  kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+                }
+                kb.text('⚡ ជជែកប្រធានបទបន្ទាប់', 'auto_debate:now')
+                  .row()
+                  .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+                await ctx.reply(stmt.statement, { parse_mode: 'Markdown', reply_markup: kb });
+              } else {
+                const speakerText = `💬 **${stmt.agentName}** (${stmt.roleTitle}) ៖\n${stmt.statement}`;
+                await ctx.reply(speakerText, { parse_mode: 'Markdown' });
+              }
+            }
+          });
+          return;
+        }
+
+        if (action.startsWith('interval:')) {
+          const mins = parseInt(action.replace('interval:', ''), 10);
+          if (!isNaN(mins)) {
+            AutonomousNewsRadarEngine.setIntervalMinutes(mins);
+            await ctx.answerCallbackQuery({ text: `⏱️ កំណត់ ${mins} នាទី!` });
+            await ctx.reply(`⏱️ **បានកំណត់វដ្ត Auto Debate ៖ រៀងរាល់ ${mins} នាទីម្តង!**`);
+            return;
+          }
+        }
+
+        if (action === 'status') {
+          await ctx.answerCallbackQuery();
+          const status = AutonomousNewsRadarEngine.getStatus();
+          const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+          const kb = new InlineKeyboard();
+
+          if (status.isEnabled) {
+            kb.text('🔴 ផ្អាក Auto Debate', 'auto_debate:stop');
+          } else {
+            kb.text('🟢 បើកដំណើរការ ២៤/៧', 'auto_debate:start');
+          }
+          kb.text('⚡ ជជែក Live ភ្លាមៗ', 'auto_debate:now').row();
+
+          kb.text('⏱️ 1 នាទី', 'auto_debate:interval:1')
+            .text('⏱️ 3 នាទី', 'auto_debate:interval:3')
+            .text('⏱️ 5 នាទី', 'auto_debate:interval:5')
+            .row();
+
+          if (liveUrl && liveUrl.startsWith('https://')) {
+            kb.webApp('🌐 បើក Sovereign Mini Web', liveUrl).row();
+          }
+          kb.text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+          const statusText = `📡 **មជ្ឈមណ្ឌលបញ្ជា AUTO DEBATE ២៤/៧ (24/7 LIVE RADAR & MINI WEB)**\n\n` +
+            `• ស្ថានភាព ៖ ${status.isEnabled ? '🟢 **កំពុងដំណើរការ (RUNNING 24/7)**' : '🔴 **បានផ្អាក (PAUSED)**'}\n` +
+            `• វដ្តជជែក ៖ **រៀងរាល់ ${status.intervalMinutes} នាទីម្តង**\n` +
+            `• ប្រធានបទបានដេញដោលសរុប ៖ **${status.processedCount} ប្រធានបទ**\n` +
+            `• ប្រធានបទចុងក្រោយ ៖ «*${status.lastTopic || 'វិធានការសន្តិសុខ និងសេវាសាធារណៈ'}*»\n` +
+            `• Mini Web WebSocket ៖ 🟢 **Real-Time Streaming Active**\n\n` +
+            `👉 **ពាក្យបញ្ជារហ័ស** ៖\n` +
+            `• \`/auto_debate on\` ៖ បើកដំណើរការ ២៤/៧ & Live ក្នុង Chat នេះ\n` +
+            `• \`/auto_debate off\` ៖ ផ្អាកការជជែកស្វ័យប្រវត្តិ\n` +
+            `• \`/auto_debate now\` ៖ កោះប្រជុំដេញដោល Live ភ្លាមៗ\n` +
+            `• \`/auto_debate interval 5\` ៖ កំណត់រៀងរាល់ ៥ នាទីម្តង`;
+
+          await ctx.reply(statusText, { reply_markup: kb, parse_mode: 'Markdown' });
+          return;
+        }
       }
 
       if (data.startsWith('agency:')) {

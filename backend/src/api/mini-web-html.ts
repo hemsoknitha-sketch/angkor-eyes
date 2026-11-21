@@ -77,8 +77,12 @@ export function getMiniWebAppHtml(): string {
       </div>
     </div>
 
-    <!-- Live Status Pill -->
+    <!-- Live Status Pill & Auto Debate Indicator -->
     <div class="flex items-center space-x-2">
+      <div id="radar-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-medium text-amber-400">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span>24/7 AUTO DEBATE</span>
+      </div>
       <div id="ws-badge" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-400">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span id="ws-text">LIVE</span>
