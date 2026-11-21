@@ -21,6 +21,7 @@ echo "=========================================================="
 echo "📥 Pulling latest commits from GitHub..."
 git fetch origin main
 git reset --hard origin/main
+chmod +x scripts/*.sh 2>/dev/null || true
 
 # 2. Update dependencies
 echo "📦 Updating backend dependencies..."

@@ -14,6 +14,8 @@ import { EmergencyKillSwitch } from '../safety/kill-switch.js';
 import { UnifiedSearchEngine } from './search.js';
 import { GitRollbackController } from '../git/git-rollback.js';
 import { CronScheduler } from '../scheduler/cron-scheduler.js';
+import { getMiniWebAppHtml } from './mini-web-html.js';
+import { InterMinisterialDebateEngine } from '../cambodia/debate-engine.js';
 
 export class HttpApiServer {
   private static webClients: Set<WebSocket> = new Set();
@@ -99,6 +101,23 @@ export class HttpApiServer {
       };
 
       // --- Routes ---
+
+      // 0. Serve Sovereign Mini Web App Dashboard
+      if ((pathname === '/' || pathname === '/mini-app' || pathname === '/index.html') && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(getMiniWebAppHtml());
+        return;
+      }
+
+      // 0.5. Automated Inter-Ministerial Debate on Breaking Topics
+      if (pathname === '/api/debate' && req.method === 'POST') {
+        const body = await readBody();
+        const result = await InterMinisterialDebateEngine.deliberateOnTopic({
+          topic: body.topic || 'វិធានការសន្តិសុខ និងសេវាសាធារណៈជូនប្រជាពលរដ្ឋ',
+          initiatedBy: body.initiatedBy || 'Web User'
+        });
+        return json(result);
+      }
 
       // 1. System Status
       if (pathname === '/api/system/status' && req.method === 'GET') {

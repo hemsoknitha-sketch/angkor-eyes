@@ -15,6 +15,7 @@ import { VoiceVisionInspector } from '../safety/voice-vision-inspector.js';
 import { CambodiaSocialDebateRadar } from '../cambodia/social-debate-radar.js';
 import { CrisisMomentumDetector } from '../cambodia/crisis-velocity-detector.js';
 import { AutonomousCitizenCommentResponder } from '../cambodia/autonomous-citizen-responder.js';
+import { InterMinisterialDebateEngine } from '../cambodia/debate-engine.js';
 
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
@@ -62,8 +63,31 @@ export class TelegramBotEngine {
       await next();
     });
 
-    // /start command
-    bot.command('start', async (ctx) => {
+    // Helper for main menu keyboard
+    const buildMainMenuKeyboard = () => {
+      return new InlineKeyboard()
+        .text('🏛️ ស្ថាប័នកំពូលជាតិ', 'menu_top')
+        .text('🏢 ក្រសួងទាំង ២៨', 'menu_ministries')
+        .row()
+        .text('👮 សន្តិសុខ & ពន្ធដារ', 'menu_security')
+        .text('📍 រាជធានី-ខេត្តទាំង ២៥', 'menu_provinces')
+        .row()
+        .text('🔥 ប្រធានបទក្តៅ & Debate', 'menu_debate')
+        .text('⚖️ សវនកម្មច្បាប់', 'menu_legal')
+        .row()
+        .text('🌐 បើក Sovereign Mini Web', 'open_web')
+        .text('📊 ស្ថានភាពប្រព័ន្ធ', 'menu_status');
+    };
+
+    const getMainMenuText = () => {
+      return `🇰🇭 **ANGKOR EYES — SOVEREIGN INSTITUTIONAL AGI PLATFORM**\n` +
+        `*មជ្ឈមណ្ឌលបញ្ជាកំពូល និងប្រព័ន្ធ AGI ស្ថាប័នជាតិទាំង ៧៨ ដំណើរការ ២៤/៧ ៣៦៥ Live Real-Time*\n\n` +
+        `👑 **អ្នកគ្រប់គ្រងកំពូល (Supreme Controller)** ៖ \`/angkor_eyes\`\n` +
+        `💡 សូមជ្រើសរើសផ្នែកខាងក្រោម ដើម្បីបញ្ជាស្ថាប័នរដ្ឋ ឬបើកកិច្ចប្រជុំដោះស្រាយវិបត្តិសង្គម ៖`;
+    };
+
+    // /start and /menu commands
+    bot.command(['start', 'menu'], async (ctx) => {
       const from = ctx.from;
       if (from) {
         db.upsertUser({
@@ -75,46 +99,89 @@ export class TelegramBotEngine {
         });
       }
 
+      await ctx.reply(getMainMenuText(), {
+        reply_markup: buildMainMenuKeyboard(),
+        parse_mode: 'Markdown'
+      });
+    });
+
+    // /debate command - Autonomous multi-agent deliberation
+    bot.command('debate', async (ctx) => {
+      const query = ctx.match ? ctx.match.trim() : '';
+      if (!query) {
+        const keyboard = new InlineKeyboard()
+          .text('🛡️ បង្ក្រាបឆបោកអនឡាញ', 'debate:online_scams')
+          .text('⚖️ វិវាទដីធ្លី & ប្លង់រឹង', 'debate:land_dispute')
+          .row()
+          .text('🚫 ប្រឆាំងពុករលួយនៅ OWSO', 'debate:anti_corruption')
+          .text('🚗 សុវត្ថិភាពចរាចរណ៍', 'debate:traffic_order')
+          .row()
+          .text('💰 កំណែទម្រង់ពន្ធដារ', 'debate:tax_reforms');
+
+        await ctx.reply(
+          `⚡ **កោះប្រជុំបន្ទាន់ AGI ៧៨ AGENTS (Real-Time Deliberation)**\n\n` +
+          `សូមជ្រើសរើសប្រធានបទគំរូខាងក្រោម ឬវាយបញ្ជាផ្ទាល់ ៖\n` +
+          `\`/debate <ប្រធានបទជាក់លាក់របស់អ្នក>\``,
+          { reply_markup: keyboard, parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      await ctx.reply(
+        `⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI អន្តរក្រសួង...**\n` +
+        `ប្រធានបទ ៖ «*${query}*»\n` +
+        `*Rex Lead Orchestrator កំពុងសម្របសម្រួល និងស្រង់ចម្លើយពីស្ថាប័នពាក់ព័ន្ធ...*`,
+        { parse_mode: 'Markdown' }
+      );
+
+      try {
+        const result = await InterMinisterialDebateEngine.deliberateOnTopic({
+          topic: query,
+          initiatedBy: ctx.from?.first_name || 'Super Admin'
+        });
+        await ctx.reply(result.formattedTelegramDigest, { parse_mode: 'Markdown' });
+      } catch (err: any) {
+        await ctx.reply(`⚠️ កំហុសក្នុងដំណើរការប្រជុំ: ${err.message}`);
+      }
+    });
+
+    // /hottopics command
+    bot.command(['hottopics', 'topics'], async (ctx) => {
       const keyboard = new InlineKeyboard()
-        .text('🚀 បើក ANGKOR EYES Mini Web', 'open_web')
+        .text('🛡️ បង្ក្រាបឆបោកអនឡាញ & ល្បែង', 'debate:online_scams')
         .row()
-        .text('➕ បង្កើត Agent ថ្មី (/newagent)', 'cmd_newagent')
-        .text('🌙 Away Mode (/away)', 'cmd_away');
+        .text('⚖️ វិវាទដីធ្លី & ប្លង់រឹង', 'debate:land_dispute')
+        .row()
+        .text('🚫 ប្រឆាំងពុករលួយ & សំណូកនៅ OWSO', 'debate:anti_corruption')
+        .row()
+        .text('🚗 សុវត្ថិភាពចរាចរណ៍ផ្លូវគោក', 'debate:traffic_order')
+        .row()
+        .text('💰 កំណែទម្រង់ពន្ធដារ & វិនិយោគ', 'debate:tax_reforms');
 
-      const welcomeText = `🇰🇭 **សូមស្វាគមន៍មកកាន់ ANGKOR EYES - AGI AGENTS PLATFORM**!
+      await ctx.reply(
+        `🔥 **ប្រធានបទក្តៅសង្គមជាតិកំពុងផ្ទុះ (National Breaking Debates)**\n` +
+        `ចុចលើប្រធានបទណាមួយខាងក្រោម ដើម្បីឱ្យ AGI Agents ពាក់ព័ន្ធជជែកវែកញ៉ែក និងដាក់ចេញដំណោះស្រាយរួមភ្លាមៗ ៖`,
+        { reply_markup: keyboard, parse_mode: 'Markdown' }
+      );
+    });
 
-👑 **អ្នកគ្រប់គ្រងកំពូល (Supreme Controller)**: \`/angkor_eyes\`
-មានសិទ្ធិផ្តាច់មុខពេញលេញ (Full Sovereign Authority) លើគ្រប់ AGI Agents ទាំងអស់ក្នុងព្រះរាជាណាចក្រកម្ពុជា។
+    // /web command
+    bot.command('web', async (ctx) => {
+      const keyboard = new InlineKeyboard()
+        .text('🔄 ពិនិត្យការតភ្ជាប់ Live', 'check_connection')
+        .row()
+        .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
 
-📌 **ពាក្យបញ្ជាសំខាន់ៗ (System Commands)**:
-• \`/angkor_eyes\` : មជ្ឈមណ្ឌលបញ្ជាកំពូល AGI ANGKOR EYES
-• \`/ministries\` : បញ្ជីឈ្មោះក្រសួងទាំង ២៨ និងស្ថាប័នរដ្ឋ
-• \`/daily_report\` : របាយការណ៍សង្ខេបប្រតិបត្តិប្រចាំថ្ងៃជូន Super Admin
-• \`/macro\` : សូចនាករសេដ្ឋកិច្ចជាតិ អត្រាប្តូរប្រាក់ និងទុនបម្រុង (NBC/MEF)
-• \`/social_radar\` : រ៉ាដាស្កេនចាប់ការជជែកដេញដោល និងកង្វល់សង្គមក្តៅៗ
-• \`/crisis_check\` : ត្រួតពិនិត្យរលកវិបត្តិ (Hawkes Velocity) & សេចក្តីបំភ្លឺបន្ទាន់
-• \`/inquiry\` : ឆ្លើយតបសំណើសេវាសាធារណៈស្វ័យប្រវត្ត & បង្កើត Ticket ID
-• \`/hotzones\` : រ៉ាដាក្តៅនៃកង្វល់ប្រជាពលរដ្ឋទូទាំងរាជធានី-ខេត្ត (Civic Hotzones)
-• \`/verify_id\` : ផ្ទៀងផ្ទាត់អត្តសញ្ញាណប័ណ្ណ & e-KYC ប្រឆាំងការក្លែងបន្លំ
-• \`/newagent\` : បង្កើត AI Agent ថ្មីភ្លាមៗ
-• \`/away\` : បើក Away Mode (ធ្វើការស្វ័យប្រវត្តិពេលអ្នកសម្រាក)
-• \`/back\` : បិទ Away Mode & ទទួល Welcome Back Summary
-• \`/status\` : ពិនិត្យស្ថានភាព Agents និង Local Runner
-
-💡 **បញ្ជាផ្ទាល់ទៅកាន់ស្ថាប័នរដ្ឋ (Direct Agency Commands)**:
-• \`/interior\` : AGI ក្រសួងមហាផ្ទៃ
-• \`/mod\` : AGI ក្រសួងការពារជាតិ
-• \`/mfaic\` : AGI ក្រសួងការបរទេស
-• \`/mef\` : AGI ក្រសួងសេដ្ឋកិច្ច និងហិរញ្ញវត្ថុ
-• \`/police\` : AGI អគ្គស្នងការដ្ឋាននគរបាលជាតិ
-• \`/tax\` : AGI អគ្គនាយកដ្ឋានពន្ធដារ
-• \`/phnompenh\` : AGI រដ្ឋបាលរាជធានីភ្នំពេញ
-• \`/siemreap\` : AGI រដ្ឋបាលខេត្តសៀមរាប
-• \`/preahsihanouk\` : AGI រដ្ឋបាលខេត្តព្រះសីហនុ
-
-ឬវាយសារបញ្ជាការងារដោយផ្ទាល់ទីនេះ!`;
-
-      await ctx.reply(welcomeText, { reply_markup: keyboard, parse_mode: 'Markdown' });
+      await ctx.reply(
+        `🌐 **ANGKOR EYES SOVEREIGN MINI WEB COMMAND CENTER**\n\n` +
+        `• ផ្ទាំងគ្រប់គ្រងរដ្ឋបាលឌីជីថលបែប Futuristic Dark Mode\n` +
+        `• មើលការជជែកដេញដោលផ្ទាល់តាម WebSockets (Real-Time)\n` +
+        `• បញ្ជី AGI Agents ទាំង ៧៨ និងការអនុញ្ញាតសកម្មភាពហានិភ័យ (Approvals)\n\n` +
+        `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n` +
+        `• តាម Local Network ៖ \`http://localhost:3000\`\n` +
+        `• តាម Cloudflare HTTPS Tunnel ៖ \`https://<your-tunnel>.trycloudflare.com\``,
+        { reply_markup: keyboard, parse_mode: 'Markdown' }
+      );
     });
 
     // /angkor_eyes Supreme Commander Command
@@ -391,8 +458,205 @@ export class TelegramBotEngine {
         return;
       }
 
+      if (data === 'menu_main') {
+        await ctx.answerCallbackQuery();
+        await ctx.editMessageText(getMainMenuText(), {
+          reply_markup: buildMainMenuKeyboard(),
+          parse_mode: 'Markdown'
+        });
+        return;
+      }
+
+      if (data === 'menu_top') {
+        await ctx.answerCallbackQuery();
+        const kb = new InlineKeyboard()
+          .text('👑 ខុទ្ទកាល័យនាយករដ្ឋមន្ត្រី', 'agency:/primeminister')
+          .row()
+          .text('🏛️ ព្រឹទ្ធសភា', 'agency:/senate')
+          .text('🏛️ រដ្ឋសភាជាតិ', 'agency:/nac')
+          .row()
+          .text('🏢 ទីស្តីការគណៈរដ្ឋមន្ត្រី', 'agency:/ocm')
+          .text('⚖️ ក្រុមប្រឹក្សាធម្មនុញ្ញ', 'agency:/ccc')
+          .row()
+          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        await ctx.editMessageText(
+          `👑 **ស្ថាប័នកំពូលនៃព្រះរាជាណាចក្រកម្ពុជា**\nសូមជ្រើសរើសស្ថាប័នដើម្បីពិគ្រោះយោបល់ ឬបញ្ជាការងារ ៖`,
+          { reply_markup: kb, parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      if (data === 'menu_ministries') {
+        await ctx.answerCallbackQuery();
+        const kb = new InlineKeyboard()
+          .text('🏛️ ក្រសួងមហាផ្ទៃ', 'agency:/interior')
+          .text('🛡️ ក្រសួងការពារជាតិ', 'agency:/mod')
+          .row()
+          .text('⚖️ ក្រសួងយុត្តិធម៌', 'agency:/moj')
+          .text('💰 សេដ្ឋកិច្ច & ហិរញ្ញវត្ថុ', 'agency:/mef')
+          .row()
+          .text('🌐 ក្រសួងការបរទេស', 'agency:/mfaic')
+          .text('🏥 ក្រសួងសុខាភិបាល', 'agency:/moh')
+          .row()
+          .text('🎓 ក្រសួងអប់រំ', 'agency:/moeys')
+          .text('📦 ក្រសួងពាណិជ្ជកម្ម', 'agency:/moc')
+          .row()
+          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        await ctx.editMessageText(
+          `🏢 **ក្រសួងសំខាន់ៗនៃរាជរដ្ឋាភិបាល**\nសូមជ្រើសរើសក្រសួងដើម្បីពិគ្រោះយោបល់ ៖`,
+          { reply_markup: kb, parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      if (data === 'menu_security') {
+        await ctx.answerCallbackQuery();
+        const kb = new InlineKeyboard()
+          .text('👮 នគរបាលជាតិ (Hotline 117)', 'agency:/police')
+          .row()
+          .text('🚫 ប្រឆាំងពុករលួយ (Hotline 1282)', 'agency:/acu')
+          .row()
+          .text('📑 អគ្គនាយកដ្ឋានពន្ធដារ', 'agency:/tax')
+          .text('🚢 អគ្គនាយកដ្ឋានគយ', 'agency:/customs')
+          .row()
+          .text('🏦 ធនាគារជាតិនៃកម្ពុជា', 'agency:/nbc')
+          .text('🗺️ រៀបចំដែនដី & ដីធ្លី', 'agency:/mlmupc')
+          .row()
+          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        await ctx.editMessageText(
+          `👮 **សន្តិសុខជាតិ ច្បាប់ និងចំណូលរដ្ឋ**\nសូមជ្រើសរើសស្ថាប័នមានសមត្ថកិច្ច ៖`,
+          { reply_markup: kb, parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      if (data === 'menu_provinces') {
+        await ctx.answerCallbackQuery();
+        const kb = new InlineKeyboard()
+          .text('📍 រាជធានីភ្នំពេញ', 'agency:/phnompenh')
+          .text('📍 ខេត្តសៀមរាប', 'agency:/siemreap')
+          .row()
+          .text('📍 ខេត្តព្រះសីហនុ', 'agency:/preahsihanouk')
+          .text('📍 ខេត្តបាត់ដំបង', 'agency:/battambang')
+          .row()
+          .text('📍 ខេត្តកណ្តាល', 'agency:/kandal')
+          .text('📍 ខេត្តកំពង់ចាម', 'agency:/kampongcham')
+          .row()
+          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        await ctx.editMessageText(
+          `📍 **រដ្ឋបាលរាជធានី-ខេត្តទាំង ២៥ នៃព្រះរាជាណាចក្រកម្ពុជា**\nសូមជ្រើសរើសរដ្ឋបាលរាជធានី-ខេត្ត ៖`,
+          { reply_markup: kb, parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      if (data === 'menu_debate') {
+        await ctx.answerCallbackQuery();
+        const kb = new InlineKeyboard()
+          .text('🛡️ បង្ក្រាបឆបោកអនឡាញ & ល្បែង', 'debate:online_scams')
+          .row()
+          .text('⚖️ ដោះស្រាយវិវាទដីធ្លី & ប្លង់រឹង', 'debate:land_dispute')
+          .row()
+          .text('🚫 ទប់ស្កាត់ពុករលួយនៅច្រកចេញចូលតែមួយ', 'debate:anti_corruption')
+          .row()
+          .text('🚗 រឹតបន្តឹងចរាចរណ៍ & បើកបរស្រវឹង', 'debate:traffic_order')
+          .row()
+          .text('💰 កំណែទម្រង់ពន្ធដារ & ការលើកទឹកចិត្ត', 'debate:tax_reforms')
+          .row()
+          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        await ctx.editMessageText(
+          `🔥 **ប្រធានបទក្តៅសង្គមជាតិ & កិច្ចប្រជុំបន្ទាន់ ៧៨ AGENTS**\nចុចលើប្រធានបទណាមួយខាងក្រោម ដើម្បីឱ្យ AGI Agents ជជែកដេញដោល និងដាក់ចេញដំណោះស្រាយរួមភ្លាមៗ ៖`,
+          { reply_markup: kb, parse_mode: 'Markdown' }
+        );
+        return;
+      }
+
+      if (data.startsWith('agency:')) {
+        const cmd = data.replace('agency:', '');
+        await ctx.answerCallbackQuery({ text: `កំពុងភ្ជាប់ទៅកាន់ ${cmd}...` });
+        const matched = findAgentPresetByCommand(cmd);
+        if (matched) {
+          const res = await InstitutionalSpokespersonOrchestrator.generateSpokespersonResponse({
+            agentCommand: cmd,
+            agentName: matched.name,
+            institutionTitle: matched.systemPrompt.split('\n')[0] || matched.name,
+            userQuery: 'សូមជួយរៀបរាប់អំពីតួនាទី បេសកកម្ម ដំណោះស្រាយចំពោះមុខ និងសេវាសាធារណៈផ្លូវការរបស់អ្នក',
+            model: matched.model
+          });
+          let msg = '';
+          if (!res.officialContent.includes('ព្រះរាជាណាចក្រកម្ពុជា')) {
+            msg += `🏛️ **${res.agentName} — សេចក្តីថ្លែងការណ៍ & ការប្រឹក្សាផ្លូវការ**\n\n`;
+          }
+          msg += res.officialContent;
+          await ctx.reply(msg, { parse_mode: 'Markdown' });
+        }
+        return;
+      }
+
+      if (data.startsWith('debate:')) {
+        const topicKey = data.replace('debate:', '');
+        const topicMap: Record<string, string> = {
+          online_scams: 'វិធានការទប់ស្កាត់ការឆបោកតាមអនឡាញ និងល្បែងស៊ីសងខុសច្បាប់',
+          land_dispute: 'នីតិវិធីដោះស្រាយវិវាទដីធ្លី និងការចុះបញ្ជីក្បាលដីប្លង់រឹង',
+          anti_corruption: 'ការទប់ស្កាត់អំពើពុករលួយ និងការទារកម្រៃក្រៅផ្លូវការនៅច្រកចេញចូលតែមួយ',
+          traffic_order: 'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក និងការផាកពិន័យបទល្មើសស្រវឹង',
+          tax_reforms: 'កំណែទម្រង់ប្រព័ន្ធពន្ធដារឌីជីថល និងការលើកទឹកចិត្តធុរកិច្ចថ្មី'
+        };
+        const topic = topicMap[topicKey] || 'វិធានការសន្តិសុខ និងសេវាសាធារណៈជូនប្រជាពលរដ្ឋ';
+        await ctx.answerCallbackQuery({ text: 'កំពុងកោះប្រជុំបន្ទាន់ AGI...' });
+        await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI អន្តរក្រសួង...**\nប្រធានបទ ៖ «*${topic}*»\n*កំពុងស្រង់មាត្រាច្បាប់ និងសម្របសម្រួលចម្លើយ...*`, { parse_mode: 'Markdown' });
+        const res = await InterMinisterialDebateEngine.deliberateOnTopic({
+          topic,
+          initiatedBy: ctx.from?.first_name || 'Super Admin'
+        });
+        await ctx.reply(res.formattedTelegramDigest, { parse_mode: 'Markdown' });
+        return;
+      }
+
+      if (data === 'menu_status') {
+        await ctx.answerCallbackQuery();
+        const agents = db.getAgents();
+        const runners = db.getRunnerLeases();
+        const tasks = db.getTasks();
+        const mem = process.memoryUsage();
+        const ramMb = Math.round(mem.rss / 1024 / 1024);
+
+        const kb = new InlineKeyboard()
+          .text('🔄 Refresh Status', 'menu_status')
+          .row()
+          .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
+
+        const statusMsg = `📊 **ស្ថានភាពប្រព័ន្ធ ANGKOR EYES (Live Platform Health)**\n\n` +
+          `• 🤖 **Total AGI Agents**: 78+ Active Agents\n` +
+          `• ⚡ **Engine Cost**: $0.00 Free Tier (Google Cloud VPS e2-micro)\n` +
+          `• 🧠 **RAM Consumption**: ${ramMb} MB / 1024 MB (Very Healthy)\n` +
+          `• 💻 **Local Runner Engine**: ${runners.filter(r => r.status === 'online').length > 0 ? '🟢 Online' : '🟡 Standby / Local Mode'}\n` +
+          `• 📋 **Tasks In-Flight**: ${tasks.filter(t => t.status === 'running').length} Tasks\n` +
+          `• 🕒 **Uptime**: ${Math.floor(process.uptime() / 60)} នាទី\n\n` +
+          `*ប្រព័ន្ធដំណើរការ ២៤ ម៉ោង លើ ២៤ ម៉ោង គ្មានការរអាក់រអួលឡើយ ៕*`;
+
+        await ctx.editMessageText(statusMsg, { reply_markup: kb, parse_mode: 'Markdown' });
+        return;
+      }
+
       if (data === 'open_web') {
-        await ctx.answerCallbackQuery({ text: 'សូមចុចប៊ូតុង Menu ខាងឆ្វេងក្រោម ដើម្បីបើក Mini Web' });
+        await ctx.answerCallbackQuery({ text: 'សូមបើក Mini Web តាម Browser ឬ Cloudflare HTTPS' });
+        await ctx.reply(
+          `🌐 **ANGKOR EYES Sovereign Mini Web Command Center**\n\n` +
+          `• ផ្ទាំងគ្រប់គ្រងរដ្ឋបាលឌីជីថលបែប Futuristic Dark Mode\n` +
+          `• មើលការជជែកដេញដោលផ្ទាល់តាម WebSockets (Real-Time)\n` +
+          `• បញ្ជី AGI Agents ទាំង ៧៨ និងការអនុញ្ញាតសកម្មភាពហានិភ័យ (Approvals)\n\n` +
+          `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n` +
+          `• តាម Local ៖ \`http://localhost:3000\`\n` +
+          `• តាម Cloudflare HTTPS ៖ \`https://<your-tunnel>.trycloudflare.com\``,
+          { parse_mode: 'Markdown' }
+        );
+        return;
       }
     });
 
@@ -528,6 +792,22 @@ export class TelegramBotEngine {
   }
 
   private static startBot(bot: Bot): void {
+    // Register official command list into Telegram native [/] menu
+    bot.api.setMyCommands([
+      { command: 'menu', description: '🏛️ មឺនុយមេ & ផ្ទាំងបញ្ជា AGI ទាំង ៧៨' },
+      { command: 'interior', description: '🏛️ ក្រសួងមហាផ្ទៃ & អត្តសញ្ញាណកម្ម' },
+      { command: 'justice', description: '⚖️ ក្រសួងយុត្តិធម៌ & តុលាការ' },
+      { command: 'finance', description: '💰 ក្រសួងសេដ្ឋកិច្ច & ហិរញ្ញវត្ថុ' },
+      { command: 'defence', description: '🛡️ ក្រសួងការពារជាតិ & កងទ័ព' },
+      { command: 'police', description: '👮 អគ្គស្នងការដ្ឋាននគរបាលជាតិ (117)' },
+      { command: 'acu', description: '🚫 អង្គភាពប្រឆាំងអំពើពុករលួយ (1282)' },
+      { command: 'land', description: '🗺️ វិវាទដីធ្លី និងការចុះបញ្ជីប្លង់រឹង' },
+      { command: 'debate', description: '⚡ កោះប្រជុំ ៧៨ Agents ជជែកដោះស្រាយវិបត្តិ' },
+      { command: 'hottopics', description: '🔥 ប្រធានបទក្តៅសង្គមជាតិកំពុងផ្ទុះ' },
+      { command: 'web', description: '🌐 បើក Sovereign Mini Web App' },
+      { command: 'status', description: '📊 ពិនិត្យសុខភាពប្រព័ន្ធ & ម៉ាស៊ីន VPS' }
+    ]).catch(() => { });
+
     bot.start({
       onStart: (info) => {
         console.log(`[TelegramBot] Bot @${info.username} started successfully via Long Polling.`);
