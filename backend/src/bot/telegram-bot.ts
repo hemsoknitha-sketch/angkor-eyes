@@ -12,6 +12,9 @@ import { CambodiaMacroIntelligence } from '../cambodia/macro-intelligence.js';
 import { SelfHealingWatchdog } from '../safety/self-healing-watchdog.js';
 import { CivicGeocodingAndHotzoneRadar, ZeroClickPredictiveGovernor } from '../cambodia/civic-logistics.js';
 import { VoiceVisionInspector } from '../safety/voice-vision-inspector.js';
+import { CambodiaSocialDebateRadar } from '../cambodia/social-debate-radar.js';
+import { CrisisMomentumDetector } from '../cambodia/crisis-velocity-detector.js';
+import { AutonomousCitizenCommentResponder } from '../cambodia/autonomous-citizen-responder.js';
 
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
@@ -88,6 +91,9 @@ export class TelegramBotEngine {
 • \`/ministries\` : បញ្ជីឈ្មោះក្រសួងទាំង ២៨ និងស្ថាប័នរដ្ឋ
 • \`/daily_report\` : របាយការណ៍សង្ខេបប្រតិបត្តិប្រចាំថ្ងៃជូន Super Admin
 • \`/macro\` : សូចនាករសេដ្ឋកិច្ចជាតិ អត្រាប្តូរប្រាក់ និងទុនបម្រុង (NBC/MEF)
+• \`/social_radar\` : រ៉ាដាស្កេនចាប់ការជជែកដេញដោល និងកង្វល់សង្គមក្តៅៗ
+• \`/crisis_check\` : ត្រួតពិនិត្យរលកវិបត្តិ (Hawkes Velocity) & សេចក្តីបំភ្លឺបន្ទាន់
+• \`/inquiry\` : ឆ្លើយតបសំណើសេវាសាធារណៈស្វ័យប្រវត្ត & បង្កើត Ticket ID
 • \`/hotzones\` : រ៉ាដាក្តៅនៃកង្វល់ប្រជាពលរដ្ឋទូទាំងរាជធានី-ខេត្ត (Civic Hotzones)
 • \`/verify_id\` : ផ្ទៀងផ្ទាត់អត្តសញ្ញាណប័ណ្ណ & e-KYC ប្រឆាំងការក្លែងបន្លំ
 • \`/newagent\` : បង្កើត AI Agent ថ្មីភ្លាមៗ
@@ -285,6 +291,65 @@ export class TelegramBotEngine {
       const guidance = `🛡️ **មជ្ឈមណ្ឌលផ្ទៀងផ្ទាត់អត្តសញ្ញាណប័ណ្ណ & e-KYC (Ministry of Interior & Police)**\n\n` +
         `សូមផ្ញើរូបថតអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ (ID Card) ឬលិខិតឆ្លងដែនផ្លូវការ ដើម្បីឱ្យប្រព័ន្ធ AI ពិនិត្យភាពត្រឹមត្រូវ ប្រឆាំងការក្លែងបន្លំ និង Deepfake ៕`;
       await ctx.reply(guidance, { parse_mode: 'Markdown' });
+    });
+
+    // /social_radar - Cambodian Social Debate & Viral Issues Radar
+    bot.command(['social_radar', 'debate'], async (ctx) => {
+      const query = ctx.match ? ctx.match.toString().trim() : '';
+      const sampleTitle = query || 'ផ្ទុះការជជែកដេញដោលអំពីការអនុវត្តច្បាប់ចរាចរណ៍ និងការប្រឆាំងអំពើពុករលួយ';
+      const sampleContent = 'ប្រជាពលរដ្ឋបានបញ្ចេញមតិរិះគន់ និងសំណូមពរឱ្យសមត្ថកិច្ចអនុវត្តច្បាប់ឱ្យបានស្មើភាពគ្នា គ្មានបក្ខពួកនិយម និងតម្លាភាព';
+
+      const analysis = CambodiaSocialDebateRadar.analyzeDebate(sampleTitle, sampleContent);
+      let msg = `📡 **រ៉ាដាស្កេនចាប់ការជជែកដេញដោលក្នុងសង្គម (CAMBODIA SOCIAL DEBATE RADAR)**\n\n`;
+      msg += `🏷️ **ប្រធានបទ** ៖ ${analysis.topicLabel}\n`;
+      msg += `🔥 **កម្រិតរលកកម្តៅ (Viral Score)** ៖ **${analysis.viralScore}%** [${analysis.isViral ? '🚨 VIRAL BREAKOUT' : '🟡 ធម្មតា'}]\n`;
+      msg += `🏛️ **ស្ថាប័នទទួលខុសត្រូវ** ៖ **${analysis.responsibleMinistryKhmer}** (\`${analysis.responsibleAgentCommand}\`)\n`;
+      msg += `⚖️ **មូលដ្ឋានច្បាប់ការពារ** ៖ ${analysis.legalAnchor}\n\n`;
+      msg += `📝 **ចំណាត់ការបន្ទាន់របស់ស្ថាប័ន** ៖\n${analysis.actionBriefKhmer}`;
+
+      await ctx.reply(msg, { parse_mode: 'Markdown' });
+    });
+
+    // /crisis_check - Hawkes Process Velocity & Urgent Press Clarification
+    bot.command(['crisis_check', 'crisis'], async (ctx) => {
+      const sampleCrisis = CrisisMomentumDetector.evaluateCrisis({
+        topicId: `CRISIS-${Date.now().toString().slice(-4)}`,
+        topicTitle: 'ករណីគ្រោះថ្នាក់ចរាចរណ៍លើផ្លូវជាតិ និងការទាមទារយុត្តិធម៌សង្គម',
+        elapsedMinutes: 30,
+        likes: 1200,
+        comments: 450,
+        shares: 620,
+        views: 25000
+      });
+
+      let msg = `⚡ **ការត្រួតពិនិត្យចលនារលកវិបត្តិ (CRISIS MOMENTUM RADAR)**\n\n`;
+      msg += `📌 **ប្រធានបទ** ៖ ${sampleCrisis.topicTitle}\n`;
+      msg += `📊 **ពិន្ទុវិបត្តិ (Crisis Score)** ៖ **${sampleCrisis.crisisScore}/100** [${sampleCrisis.classification}]\n`;
+      msg += `🚀 **ល្បឿនចែកចាយ (Velocity)** ៖ **${sampleCrisis.velocityPerMinute} pts/min** | **Shares Ratio** ៖ ${sampleCrisis.sharesRatio}\n`;
+      msg += `⏱️ **រយៈពេលកំណត់ឆ្លើយតប** ៖ ក្នុងរង្វង់ **${sampleCrisis.recommendedResponseWindowMinutes} នាទី**\n\n`;
+      msg += `🚨 **មូលហេតុបន្ទាន់** ៖ ${sampleCrisis.urgencyKhmerReason}\n\n`;
+      msg += `📄 **ព្រាងសេចក្តីបំភ្លឺផ្លូវការ (Press Clarification Draft)** ៖\n${sampleCrisis.pressClarificationDraftKhmer}`;
+
+      await ctx.reply(msg, { parse_mode: 'Markdown' });
+    });
+
+    // /inquiry - Autonomous Citizen Inquiry Responder
+    bot.command(['inquiry', 'ask'], async (ctx) => {
+      const query = ctx.match ? ctx.match.toString().trim() : '';
+      const sampleQuestion = query || 'ខ្ញុំចង់សួរអំពីនីតិវិធីធ្វើអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ តើត្រូវត្រៀមអ្វីខ្លះ?';
+
+      const response = AutonomousCitizenCommentResponder.processCitizenComment({
+        commentId: `CMT-${Date.now().toString().slice(-4)}`,
+        citizenName: ctx.from?.first_name || 'ប្រជាពលរដ្ឋ',
+        messageText: sampleQuestion
+      });
+
+      let msg = `🤖 **ប្រព័ន្ធឆ្លើយតបសំណើពលរដ្ឋស្វ័យប្រវត្ត (CITIZEN INQUIRY RESPONDER)**\n\n`;
+      msg += `🏛️ **ស្ថាប័នឆ្លើយតប** ៖ ${response.agencyNameKhmer} (\`${response.targetAgencyCommand}\`)\n`;
+      msg += `🎫 **លេខកូដសំបុត្រ (Ticket ID)** ៖ \`${response.ticketId}\` | 📞 **Hotline** ៖ **${response.hotlineNumber}**\n\n`;
+      msg += `💬 **ចម្លើយផ្លូវការ** ៖\n${response.officialPublicReplyKhmer}`;
+
+      await ctx.reply(msg, { parse_mode: 'Markdown' });
     });
 
     // Callback queries for inline buttons
