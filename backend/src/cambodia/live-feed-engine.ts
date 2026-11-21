@@ -128,6 +128,62 @@ export class LiveInstitutionalFeedEngine {
   }
 
   /**
+   * Fetches real live breaking national articles across Cambodian government, society, economy, and justice.
+   */
+  public static async fetchNationalFeeds(): Promise<LiveInstitutionalArticle[]> {
+    const nationalQuery = encodeURIComponent('Cambodia news OR ព័ត៌មានកម្ពុជា OR ក្រសួង OR នគរបាល OR ចរាចរណ៍ OR ដីធ្លី OR ពន្ធដារ OR កម្មករ');
+    const rssUrl = `https://news.google.com/rss/search?q=${nationalQuery}&hl=km&gl=KH&ceid=KH:km`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const res = await fetch(rssUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AngkorEyes/1.0; +https://angkor-eyes.gov.kh)' }
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const xmlText = await res.text();
+        const items = xmlText.split('<item>').slice(1, 15);
+        const articles: LiveInstitutionalArticle[] = [];
+
+        for (const item of items) {
+          const titleMatch = item.match(/<title>(.*?)<\/title>/);
+          const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/);
+          const sourceMatch = item.match(/<source[^>]*>(.*?)<\/source>/);
+
+          if (titleMatch && titleMatch[1]) {
+            const rawTitle = titleMatch[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim();
+            if (/[\u0e00-\u0e7f\u4e00-\u9fff]|công ty|tập đoàn|trường hải|việt nam|thaco/i.test(rawTitle)) {
+              continue;
+            }
+            const cleanTitle = rawTitle.replace(/\s*-\s*(?:The Star|Khmer Times|Phnom Penh Post|Fresh News|VOD|RFA|VOA|CamboJA).*$/i, '').trim();
+            if (cleanTitle.length > 10) {
+              articles.push({
+                title: cleanTitle,
+                source: sourceMatch ? sourceMatch[1].trim() : 'ព័ត៌មានជាតិទាន់ហេតុការណ៍',
+                url: 'https://pressocm.gov.kh',
+                publishedDate: dateMatch ? this.formatDateKhmer(new Date(dateMatch[1])) : this.getCurrentKhmerDate(),
+                category: 'ព័ត៌មានទាន់ហេតុការណ៍សង្គមជាតិ'
+              });
+            }
+          }
+        }
+
+        if (articles.length > 0) {
+          return articles;
+        }
+      }
+    } catch {
+      // Fallback to empty if network offline
+    }
+
+    return [];
+  }
+
+  /**
    * Formats a JS Date into formal Khmer calendar date string.
    */
   public static formatDateKhmer(date: Date): string {

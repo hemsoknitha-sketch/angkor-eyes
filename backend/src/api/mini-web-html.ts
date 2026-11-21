@@ -254,8 +254,14 @@ export function getMiniWebAppHtml(): string {
       const div = document.createElement('div');
       div.className = 'p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-200 leading-relaxed';
       const senderDisplay = sender.startsWith('/') ? '💬 ' + sender : (sender.startsWith('💬') ? sender : '💬 ' + sender);
+      let cleanText = text.trim();
+      if (!cleanText.includes('AGI AGENTS របាយការណ៍ពី AI') && !cleanText.includes('របាយការណ៍សង្ខេបប្រតិបត្តិ') && !cleanText.includes('ស្នើសុំជជែក')) {
+        cleanText = cleanText.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+        cleanText = cleanText.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+        cleanText = '«' + cleanText + '»';
+      }
       div.innerHTML = '<div class="font-bold text-emerald-400 text-xs mb-1 font-mono tracking-wide">' + escapeHtml(senderDisplay) + '</div>' +
-                      '<div class="whitespace-pre-wrap leading-relaxed text-slate-200">' + escapeHtml(text) + '</div>';
+                      '<div class="whitespace-pre-wrap leading-relaxed text-slate-200">' + escapeHtml(cleanText) + '</div>';
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
     }

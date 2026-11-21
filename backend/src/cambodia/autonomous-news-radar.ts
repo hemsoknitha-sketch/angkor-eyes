@@ -14,26 +14,46 @@ export class AutonomousNewsRadarEngine {
   private static liveChatSubscribers: Set<number> = new Set();
 
   private static fallbackTopics: string[] = [
-    'ការការពារសិទ្ធិ និងផលប្រយោជន៍ស្របច្បាប់របស់កម្មករ-និយោជិតតាមរោងចក្រ និងការអនុវត្តប្រាក់ឈ្នួលអប្បបរមា',
-    'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក ការត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ និងការកាត់ពិន្ទុបណ្ណបើកបរ',
-    'នីតិវិធីចុះបញ្ជីក្បាលដីមានលក្ខណៈជាប្រព័ន្ធ និងការដោះស្រាយវិវាទដីធ្លីក្រៅប្រព័ន្ធតុលាការ',
-    'វិធានការទប់ស្កាត់ការឆបោកតាមប្រព័ន្ធអនឡាញ ល្បែងស៊ីសង និងការបង្កកគណនីលាងលុយកខ្វក់',
+    // 1. Labour, Factory Workers & Wages
+    'ការការពារសិទ្ធិ និងផលប្រយោជន៍ស្របច្បាប់របស់កម្មករ-និយោជិតតាមរោងចក្រ និងការអនុវត្តប្រាក់ឈ្នួលអប្បបរមា ២០៨ ដុល្លារ/ខែ',
+    // 2. Traffic Safety & Drunk Driving
+    'ការរឹតបន្តឹងច្បាប់ចរាចរណ៍ផ្លូវគោក ការត្រួតពិនិត្យជាតិស្រវឹងពេលយប់ និងការកាត់ពិន្ទុបណ្ណបើកបរតាមឌីជីថល',
+    // 3. Land Disputes & Systemic Titling
+    'នីតិវិធីចុះបញ្ជីក្បាលដីមានលក្ខណៈជាប្រព័ន្ធ (LMAP) និងការដោះស្រាយវិវាទដីធ្លីក្រៅប្រព័ន្ធតុលាការ',
+    // 4. Cyber Fraud & Money Laundering
+    'វិធានការទប់ស្កាត់ការឆបោកតាមប្រព័ន្ធអនឡាញ ល្បែងស៊ីសងខុសច្បាប់ និងការបង្កកគណនីលាងលុយកខ្វក់',
+    // 5. Anti-Corruption & OWSO
     'ការទប់ស្កាត់អំពើពុករលួយ និងការទារកម្រៃក្រៅផ្លូវការនៅការិយាល័យច្រកចេញចូលតែមួយ (OWSO)',
-    'កំណែទម្រង់ប្រព័ន្ធពន្ធដារឌីជីថល ការលើកទឹកចិត្តពន្ធដារដល់សហគ្រាសធុនតូច-មធ្យម (SME) និង Startups',
-    'វិធានការរក្សាស្ថិរភាពតម្លៃស្រូវ កសិផល និងការត្រួតពិនិត្យគុណភាពជីកសិកម្មជូនប្រជាកសិករ',
-    'ការពង្រីករបបសន្តិសុខសង្គម (ប.ស.ស.) ជូនអ្នកប្រកបរបរក្រៅប្រព័ន្ធ និងការទប់ស្កាត់ឱសថក្លែងក្លាយ',
-    'ការបង្ក្រាបបទល្មើសធនធានធម្មជាតិ ការទន្ទ្រានដីព្រៃអភិរក្ស និងការគ្រប់គ្រងកាកសំណល់ប្លាស្ទិក',
-    'យុទ្ធសាស្ត្រស្តារវិស័យទេសចរណ៍ សម្រួលទិដ្ឋាការ និងការគ្រប់គ្រងរមណីយដ្ឋានប្រវត្តិសាស្ត្រអង្គរ',
-    'ការបញ្ចុះតម្លៃអគ្គិសនីបម្រើឱ្យវិស័យកសិកម្ម និងការជំរុញការប្រើប្រាស់ថាមពលកកើតឡើងវិញ',
-    'កំណែទម្រង់មុខងារសាធារណៈ ការប្រឡងជ្រើសរើសមន្ត្រីរាជការដោយតម្លាភាព និងការលុបបំបាត់មន្ត្រីខ្មោច',
-    'ការលើកកម្ពស់គុណភាពអប់រំ បណ្តុះបណ្តាលជំនាញបច្ចេកទេស STEM និងអនាម័យតាមសាលារៀន',
-    'វិធានការដោះស្រាយការកកស្ទះចរាចរណ៍ និងការស្តារប្រព័ន្ធលូរំដោះទឹកជំនន់ក្នុងរាជធានីភ្នំពេញ',
-    'ការរឹតបន្តឹងការដឹកជញ្ជូនលើសទម្ងន់កម្រិតកំណត់ និងការថែទាំគុណភាពផ្លូវជាតិ',
-    'វិធានការបង្ក្រាបការជួញដូរគ្រឿងញៀន និងការពង្រឹងគោលនយោបាយភូមិ-ឃុំ-សង្កាត់មានសុវត្ថិភាព',
-    'ការទប់ស្កាត់ព័ត៌មានមិនពិត (Fake News) ការពារសន្តិសុខឌីជីថល និងសីលធម៌សារព័ត៌មាន',
-    'ការផ្តល់ប្រាក់ឧបត្ថម្ភគាំពារសង្គមជូនជនមានពិការភាព ជនចាស់ជរា និងគ្រួសារងាយរងគ្រោះ',
-    'ការអភិវឌ្ឍប្រព័ន្ធស្រោចស្រព ទំនប់អាងទឹក និងការត្រៀមកម្លាំងអន្តរាគមន៍គ្រោះរាំងស្ងួត',
-    'ការគ្រប់គ្រងសណ្តាប់ធ្នាប់ឆ្នេរសមុទ្រ និងការពង្រឹងសន្តិសុខទេសចរណ៍នៅខេត្តព្រះសីហនុ'
+    // 6. Protests, Strikes & Public Assembly
+    'យន្តការសម្របសម្រួលដោះស្រាយកង្វល់ និងការការពារសន្តិសុខសណ្តាប់ធ្នាប់ក្នុងករណីមានការជួបជុំតវ៉ា ឬកូដកម្មដោយសន្តិវិធី',
+    // 7. Border Demarcation & Sovereignty
+    'ការបង្កើនការល្បាតការពារអធិបតេយ្យភាពទឹកដីតាមខ្សែបន្ទាត់ព្រំដែន និងការជំរុញការងារខណ្ឌសីមាព្រំដែន',
+    // 8. Human Rights, Civil Society & Social Justice
+    'ការលើកកម្ពស់សិទ្ធិមនុស្ស យុត្តិធម៌សង្គម ការពន្លឿនការជំនុំជម្រះក្តីនៅតុលាការ និងភាពជាដៃគូជាមួយអង្គការសង្គមស៊ីវិល',
+    // 9. Finance, Banking & Bakong Currency
+    'ការរក្សាស្ថិរភាពរូបិយវត្ថុជាតិ ការលើកកម្ពស់ការប្រើប្រាស់ប្រាក់រៀល និងការពង្រីកប្រព័ន្ធទូទាត់បាគង (Bakong)',
+    // 10. Foreign Affairs & International Diplomacy
+    'យុទ្ធសាស្ត្រការទូតសេដ្ឋកិច្ច ការពង្រឹងកិច្ចសហប្រតិបត្តិការតំបន់អាស៊ាន និងការទាក់ទាញការវិនិយោគផ្ទាល់ពីបរទេស (FDI)',
+    // 11. Agriculture, Paddy Rice & Fertilizers
+    'វិធានការរក្សាស្ថិរភាពតម្លៃស្រូវ កសិផល និងការចុះបង្ក្រាបការនាំចូល និងចែកចាយជី-ថ្នាំកសិកម្មក្លែងក្លាយ',
+    // 12. Public Health, Hospitals & NSSF
+    'ការពង្រីករបបសន្តិសុខសង្គម (ប.ស.ស.) ជូនអ្នកប្រកបរបរក្រៅប្រព័ន្ធ និងការពង្រឹងគុណភាពសេវាព្យាបាលនៅមន្ទីរពេទ្យរដ្ឋ',
+    // 13. Environment, Protected Forests & Plastic
+    'ការដាក់ពង្រាយកម្លាំងចម្រុះល្បាត ២៤/៧ ទប់ស្កាត់បទល្មើសកាប់បំផ្លាញព្រៃឈើ និងយុទ្ធនាការកាត់បន្ថយប្លាស្ទិក',
+    // 14. Taxes, Customs & SME Startups
+    'កំណែទម្រង់ប្រព័ន្ធពន្ធដារឌីជីថល (GDT E-Filing) និងការលើកទឹកចិត្តពន្ធដារដល់សហគ្រាសធុនតូច-មធ្យម (SME) និង Startups',
+    // 15. Education, TVET & National Exams
+    'ការពង្រឹងគុណភាពអប់រំ តម្លាភាពនៃការប្រឡងបាក់ឌុប និងការជំរុញការបណ្តុះបណ្តាលជំនាញវិជ្ជាជីវៈ (TVET) ១.៥លាននាក់',
+    // 16. Tourism & Angkor Heritage
+    'យុទ្ធសាស្ត្រស្តារវិស័យទេសចរណ៍ ការសម្រួលទិដ្ឋាការអេឡិចត្រូនិក និងការអភិរក្សរមណីយដ្ឋានប្រវត្តិសាស្ត្រអង្គរ',
+    // 17. Energy & Electricity Tariffs
+    'ការកាត់បន្ថយថ្លៃអគ្គិសនីបម្រើឱ្យវិស័យកសិកម្ម និងការជំរុញការប្រើប្រាស់ថាមពលកកើតឡើងវិញ (ពន្លឺព្រះអាទិត្យ)',
+    // 18. Water Resources & Drought Relief
+    'ការអភិវឌ្ឍប្រព័ន្ធស្រោចស្រព ប្រឡាយមេ ទំនប់អាងទឹក និងការត្រៀមកម្លាំងអន្តរាគមន៍គ្រោះរាំងស្ងួតជូនកសិករ',
+    // 19. Phnom Penh Urban Drainage & Traffic Lights
+    'វិធានការដោះស្រាយការកកស្ទះចរាចរណ៍ ការបំពាក់ភ្លើងស្តុបឆ្លាតវៃ និងការស្តារប្រព័ន្ធលូរំដោះទឹកជំនន់ក្នុងរាជធានីភ្នំពេញ',
+    // 20. Drugs & Village Safety Policy
+    'យុទ្ធនាការបង្ក្រាបការជួញដូរគ្រឿងញៀន និងការពង្រឹងគោលនយោបាយភូមិ-ឃុំ-សង្កាត់មានសុវត្ថិភាពទូទាំងប្រទេស'
   ];
 
   /**
@@ -138,9 +158,14 @@ export class AutonomousNewsRadarEngine {
    * Selects the next hot or breaking topic from feeds or curated fallback topics.
    */
   public static async getNextHotTopic(): Promise<string> {
+    // 1. Live Breaking Feeds (Google News / Government portals)
     try {
       const articles = await LiveInstitutionalFeedEngine.fetchNationalFeeds();
-      const breakingKeywords = ['បង្ក្រាប', 'ឆបោក', 'ដីធ្លី', 'ចរាចរណ៍', 'ពន្ធ', 'អន្តរាគមន៍', 'កិច្ចប្រជុំ', 'សន្តិសុខ', 'តុលាការ', 'ពុករលួយ', 'គ្រោះថ្នាក់', 'ប្លង់', 'នគរបាល'];
+      const breakingKeywords = [
+        'បង្ក្រាប', 'ឆបោក', 'ដីធ្លី', 'ចរាចរណ៍', 'ពន្ធ', 'អន្តរាគមន៍', 'កិច្ចប្រជុំ', 'សន្តិសុខ',
+        'តុលាការ', 'ពុករលួយ', 'គ្រោះថ្នាក់', 'ប្លង់', 'នគរបាល', 'កសិកម្ម', 'ស្រូវ', 'កម្មករ',
+        'ព្រំដែន', 'សិទ្ធិមនុស្ស', 'បាតុកម្ម', 'កូដកម្ម', 'ហិរញ្ញវត្ថុ', 'ធនាគារ', 'អប់រំ', 'បរិស្ថាន'
+      ];
 
       for (const a of articles) {
         const title = a.title.trim();
@@ -153,6 +178,28 @@ export class AutonomousNewsRadarEngine {
       // Fallback if feed unreachable
     }
 
+    // 2. Dynamic Real-time Situation Generator via LLMGateway (Infinite Timely Topics)
+    try {
+      const { LLMGateway } = await import('../llm/gateway.js');
+      const llmRes = await LLMGateway.generateResponse({
+        messages: [
+          { role: 'system', content: 'You are the National Situation Room Intelligence Director of Cambodia. Impeccable formal Khmer orthography.' },
+          { role: 'user', content: 'Generate 1 single fresh, highly specific, breaking national topic currently being debated in Cambodia across society, law, economy, education, agriculture, traffic accidents, traffic law enforcement, protests, finance, trade, human rights, social justice, civil society, border disputes, or foreign affairs. Return ONLY the title in formal Khmer (10-25 words), without quotes or preamble.' }
+        ],
+        preferredModel: 'gemini-2.5-flash'
+      });
+
+      if (llmRes && llmRes.content && llmRes.provider !== 'simulation') {
+        const freshTopic = llmRes.content.trim().replace(/^[«"']|[»"']$/g, '').trim();
+        if (freshTopic.length > 15 && !this.processedTopics.has(freshTopic)) {
+          return freshTopic;
+        }
+      }
+    } catch {
+      // Offline fallback
+    }
+
+    // 3. Multi-sector rotating fallback topics
     for (const fb of this.fallbackTopics) {
       if (!this.processedTopics.has(fb)) {
         return fb;
@@ -160,7 +207,8 @@ export class AutonomousNewsRadarEngine {
     }
 
     this.processedTopics.clear();
-    return this.fallbackTopics[0];
+    const shuffled = [...this.fallbackTopics].sort(() => Math.random() - 0.5);
+    return shuffled[0];
   }
 
   /**
@@ -203,7 +251,10 @@ export class AutonomousNewsRadarEngine {
             await TelegramBotEngine.broadcastToUsers(stmt.statement, kb);
           } else {
             const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
-            const speakerText = `💬 ${cmd}\n${stmt.statement}`;
+            let cleanStatement = stmt.statement.trim();
+            cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+            cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+            const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
             await TelegramBotEngine.broadcastToUsers(speakerText);
           }
         }

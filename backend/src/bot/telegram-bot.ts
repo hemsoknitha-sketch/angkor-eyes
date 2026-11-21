@@ -221,7 +221,10 @@ export class TelegramBotEngine {
               });
             } else {
               const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
-              const speakerText = `💬 ${cmd}\n${stmt.statement}`;
+              let cleanStatement = stmt.statement.trim();
+              cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+              cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+              const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
               await ctx.reply(speakerText, { parse_mode: 'Markdown' });
             }
           }
@@ -1074,7 +1077,10 @@ export class TelegramBotEngine {
               });
             } else {
               const cmd = stmt.agentCommand ? (stmt.agentCommand.startsWith('/') ? stmt.agentCommand : `/${stmt.agentCommand}`) : '/agent';
-              const speakerText = `💬 ${cmd}\n${stmt.statement}`;
+              let cleanStatement = stmt.statement.trim();
+              cleanStatement = cleanStatement.replace(/^[«"']\s*/, '').replace(/\s*[»"']$/, '').trim();
+              cleanStatement = cleanStatement.replace(/^(\/?[a-zA-Z0-9_-]+:?|\[\/?\w+\]:?)\s*/i, '').trim();
+              const speakerText = `💬 ${cmd}\n«${cleanStatement}»`;
               await ctx.reply(speakerText, { parse_mode: 'Markdown' });
             }
           }
