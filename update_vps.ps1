@@ -1,4 +1,4 @@
-﻿# ==========================================================
+# ==========================================================
 # 🇰🇭 [ANGKOR EYES] AUTO GIT COMMIT, PUSH & VPS DEPLOY
 # Repository: https://github.com/hemsoknitha-sketch/angkor-eyes.git
 # GCP Instance: angkor-eyes (us-central1-a, quant-gold-514007)

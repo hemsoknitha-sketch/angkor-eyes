@@ -6,6 +6,7 @@ import { runnerHub } from './runner-hub/hub.js';
 import { TelegramBotEngine } from './bot/telegram-bot.js';
 import { CrashRecoveryManager } from './tasks/crash-recovery.js';
 import { CronScheduler } from './scheduler/cron-scheduler.js';
+import { AutonomousNewsRadarEngine } from './cambodia/autonomous-news-radar.js';
 
 async function bootstrap() {
   console.log('--------------------------------------------------');
@@ -52,9 +53,10 @@ async function bootstrap() {
     console.log(`[Server] Local Runner WebSocket on ws://${config.host}:${config.port}/runner-ws`);
   });
 
-  // 5. Initialize Telegram Bot & Cron Scheduler
+  // 5. Initialize Telegram Bot, Cron Scheduler & 24/7 Autonomous News Radar
   TelegramBotEngine.initialize();
   CronScheduler.initialize();
+  AutonomousNewsRadarEngine.initialize(60);
 
   // Graceful shutdown
   const shutdown = () => {
