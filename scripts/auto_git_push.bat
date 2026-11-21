@@ -10,40 +10,35 @@ echo.
 
 cd /d "%~dp0\.."
 
-echo 📥 [1/4] Fetching latest status from GitHub...
-git fetch origin main
-
-echo 🔄 [2/4] Pulling and rebasing any remote changes...
-git pull origin main --rebase
-
-echo 📦 [3/4] Staging all files...
+echo 📦 [1/3] Staging and committing all local changes...
 git add -A
 
-set COMMIT_MSG=feat(sovereign-live): streaming ministerial debate, live executive brief to leadership, and 24-7 tunnel sync (%date% %time%)
+set COMMIT_MSG=feat(sovereign-live): 24-7 live auto debate and mini web streaming (%date% %time%)
 git diff --cached --quiet
 if errorlevel 1 (
-    echo 📝 [3.5/4] Committing changes: %COMMIT_MSG%
+    echo 📝 Committing changes: %COMMIT_MSG%
     git commit -m "%COMMIT_MSG%"
 ) else (
-    echo ℹ️ No uncommitted changes detected.
+    echo ℹ️ All latest code already committed.
 )
 
-echo 🚀 [4/4] Pushing to GitHub (origin main)...
+echo.
+echo 🚀 [2/3] Pushing to GitHub (origin main)...
 git push origin main
 
 if errorlevel 1 (
     echo.
-    echo ⚠️ Standard push was rejected due to diverged history.
-    echo 🔄 Retrying with safe force-push to align remote with local repository...
+    echo ⚠️ Standard push rejected. Force-syncing latest code to GitHub...
     git push origin main --force
 )
 
 echo.
 echo ==========================================================
-echo ✅ PUSH COMPLETE!
+echo ✅ PUSH COMPLETE TO GITHUB!
 echo.
-echo 💡 VPS Auto-Sync will detect this commit and automatically
-echo    update your server within 60 seconds (Zero downtime)!
+echo 💡 Now updating VPS: If auto_sync is running on VPS, it will
+echo    update within 60s. Or run on VPS:
+echo    cd /opt/angkor-eyes ^&^& sudo bash scripts/update_vps.sh
 echo ==========================================================
 echo.
 pause
