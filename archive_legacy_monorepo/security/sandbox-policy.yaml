@@ -1,0 +1,28 @@
+# ANGKOR EYES sandbox policy — enforced by runner/src/sandbox.ts
+# Docker limits, egress allowlist, timeouts.
+docker:
+  user: "10001:10001"
+  cap_drop: ["ALL"]
+  read_only_rootfs: true
+  security_opt: ["no-new-privileges"]
+  mount_docker_socket: false  # NEVER true
+  network_default: "none"
+  network_restricted: "restricted-egress"
+limits:
+  cpus: "1.0"
+  memory: "512m"
+  pids_limit: 128
+  disk_mb: 1024
+  process_timeout_ms: 600000
+  max_output_bytes: 10485760
+egress_allowlist:
+  - registry.npmjs.org
+  - registry.yarnpkg.com
+  - pypi.org
+  - files.pythonhosted.org
+  - github.com
+  - api.github.com
+  - raw.githubusercontent.com
+high_risk:
+  runtime: "runsc"  # gVisor MicroVM runtime; Firecracker is an alternative
+  network: "none"

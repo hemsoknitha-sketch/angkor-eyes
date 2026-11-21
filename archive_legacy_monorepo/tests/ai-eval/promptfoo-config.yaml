@@ -1,0 +1,43 @@
+# Promptfoo config — ANGKOR EYES AI evals (LLM-as-Judge regression suite).
+# Run:  npx promptfoo eval --config tests/ai-eval/promptfoo-config.yaml
+#        (or: npm run test:eval — from tests/)
+# Requires an LLM provider key in the environment (the judge model).
+# The suite FAILS on any regression below the thresholds — evals are a
+# release gate, not a report (see docs/roadmap.md Phase 5).
+#
+# How it works: each test case in eval-prompts.yaml sends a prompt to the
+# Lead Agent (or the named provider) and scores the output with rubric
+# assertions + an LLM-as-Judge rubric. The `defaultTest` vars are
+# overridden per case. `providers` here is the system under test: point
+# it at the backend's eval endpoint when it lands; until then the
+# prompts run against the configured judge model directly so the
+# rubrics themselves can be validated.
+
+description: ANGKOR EYES — Lead Agent regression evals (LLM-as-Judge)
+
+# The system under test. Replace with the backend eval endpoint when it
+# lands (e.g. http://localhost:3000/api/v1/eval with an API key).
+# Until then, prompts run against the judge model so rubrics can be validated.
+providers:
+  - id: openai:gpt-4o-mini
+    label: lead-agent-under-test
+    config:
+      temperature: 0.2
+
+# The judge: a stronger model grading against the rubric.
+defaultTest:
+  options:
+    transformVars: {}
+
+# Global thresholds: the suite fails if the pass rate drops below these.
+# Tighten after the first green baseline.
+thresholds:
+  passRate: 0.85
+
+# Rubric assertions apply to every test unless a test overrides them.
+# (Per-test assertions live in eval-prompts.yaml.)
+prompts:
+  - file://eval-prompts.yaml
+
+# Output: keep the full report for the release record.
+outputPath: ./eval-results/promptfoo-report.json

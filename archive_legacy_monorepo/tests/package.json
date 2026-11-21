@@ -1,0 +1,29 @@
+{
+  "description": "ANGKOR EYES test suites: unit, integration (Testcontainers), E2E (Playwright), load (k6), security (Semgrep), AI eval (Promptfoo).",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@testcontainers/postgresql": "^10.21.0",
+    "@testcontainers/redis": "^10.21.0",
+    "@types/node": "^22.0.0",
+    "pg": "^8.13.0",
+    "redis": "^4.7.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "name": "angkor-eyes-tests",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:all": "npm test && npm run test:e2e && npm run test:security",
+    "test:e2e": "playwright test e2e/mini-web.spec.ts",
+    "test:e2e:bot": "echo 'Bot E2E harness not landed yet \u2014 see tests/e2e/bot.test-outline.md' && exit 1",
+    "test:eval": "node -e \"try{require.resolve('promptfoo')}catch(e){console.error('promptfoo is not installed (optional dep: npm install -D promptfoo@^0.110.0). Its better-sqlite3 native build fails in some sandboxes.');process.exit(1)}\" && promptfoo eval --config ai-eval/promptfoo-config.yaml",
+    "test:integration": "vitest run integration",
+    "test:load": "k6 run load/k6-script.js",
+    "test:security": "semgrep --config security/semgrep.yaml ../backend ../bot ../runner ../frontend --error --strict",
+    "test:unit": "vitest run unit",
+    "test:watch": "vitest"
+  },
+  "type": "module",
+  "version": "0.1.0"
+}

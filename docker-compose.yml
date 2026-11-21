@@ -1,0 +1,221 @@
+# ANGKOR EYES — docker-compose.yml
+# Core stack: postgres (pgvector) + redis + backend + bot + frontend.
+# The Local Runner is behind the `runner` profile: it only runs on the
+# machine that holds your repo, and it dials OUT to the backend — no
+# inbound ports are opened.
+#
+# ALL secrets come from .env (see .env.example). This file contains
+# placeholders only — no real tokens, keys, or passwords.
+#
+# Usage:
+#   docker compose up -d --build            # core stack
+#   docker compose --profile runner up -d   # + local runner
+#   docker compose ps / logs -f backend / down
+
+name: angkor-eyes
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: angkor-eyes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-angkor_eyes}
+      POSTGRES_USER: ${POSTGRES_USER:-angkor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Migrations are applied by the backend on boot; if db/ ships SQL
+      # init files, mount them read-only here:
+      # - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-angkor} -d $${POSTGRES_DB:-angkor_eyes}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - angkor-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: angkor-eyes-redis
+    restart: unless-stopped
+    # If REDIS_PASSWORD is set, uncomment the command line below.
+    # command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}"]
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - angkor-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: angkor-eyes-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: "3000"
+      DATABASE_URL: ${DATABASE_URL:-postgres://angkor:changeme-postgres@postgres:5432/angkor_eyes}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      ALLOWED_TELEGRAM_IDS: ${ALLOWED_TELEGRAM_IDS:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://localhost:11434}
+      OLLAMA_URL: ${OLLAMA_URL:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_FAST_MODEL: ${LLM_FAST_MODEL:-gemini-2.5-flash}
+      LLM_STRONG_MODEL: ${LLM_STRONG_MODEL:-gemini-2.5-pro}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      RUNNER_SHARED_SECRET: ${RUNNER_SHARED_SECRET:-}
+      API_KEY_SALT: ${API_KEY_SALT:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DAILY_BUDGET_USD: ${DAILY_BUDGET_USD:-10}
+      MAX_RUN_COST_USD: ${MAX_RUN_COST_USD:-2}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      # File attachments / uploads (backed by S3/R2 in production; local
+      # volume is the dev fallback).
+      - uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - angkor-net
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: angkor-eyes-bot
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      ALLOWED_TELEGRAM_IDS: ${ALLOWED_TELEGRAM_IDS:-}
+      BACKEND_URL: ${BACKEND_URL:-http://backend:3000}
+      BOT_WEBHOOK_URL: ${BOT_WEBHOOK_URL:-}
+      BOT_WEBHOOK_SECRET: ${BOT_WEBHOOK_SECRET:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    # No published ports: the bot uses long-polling by default, or a
+    # webhook if BOT_WEBHOOK_URL is set (webhook served via the backend).
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(1)\""]
+      # Placeholder: replace with a real liveness probe once bot/ exposes
+      # one (e.g. `node healthcheck.js`). Disabled by default so a missing
+      # probe does not flap the container; compose still restarts on crash.
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - angkor-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Public, non-secret build-time config only. Never pass secrets
+        # as build args — they would be baked into the image.
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
+        VITE_TELEGRAM_BOT_USERNAME: ${VITE_TELEGRAM_BOT_USERNAME:-}
+    container_name: angkor-eyes-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - angkor-net
+
+  runner:
+    profiles:
+      - runner
+    build:
+      context: ./runner
+      dockerfile: Dockerfile
+    container_name: angkor-eyes-runner
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      BACKEND_URL: ${BACKEND_URL:-http://backend:3000}
+      RUNNER_SHARED_SECRET: ${RUNNER_SHARED_SECRET:-}
+      RUNNER_ID: ${RUNNER_ID:-runner-1}
+      RUNNER_REPO_PATH: ${RUNNER_REPO_PATH:-/repos/main}
+      RUNNER_WORKTREES_PATH: ${RUNNER_WORKTREES_PATH:-/repos/worktrees}
+      RUNNER_MAX_WORKTREES: ${RUNNER_MAX_WORKTREES:-10}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      # The runner needs real access to your repo on this machine.
+      # Bind-mount the repo read-write ONLY on the runner host, and only
+      # the repo(s) listed in RUNNER_REPO_PATH — never your whole home dir.
+      - ${RUNNER_REPO_PATH:-./repos/main}:/repos/main:rw
+      - ${RUNNER_WORKTREES_PATH:-./repos/worktrees}:/repos/worktrees:rw
+    # No published ports: the runner dials OUT to the backend (and to the
+    # tunnel endpoint). Nothing inbound is opened.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(1)\""]
+      # Placeholder — see bot healthcheck note above.
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - angkor-net
+
+volumes:
+  pgdata:
+    name: angkor-eyes-pgdata
+  redisdata:
+    name: angkor-eyes-redisdata
+  uploads:
+    name: angkor-eyes-uploads
+
+networks:
+  angkor-net:
+    name: angkor-eyes-net
+    driver: bridge

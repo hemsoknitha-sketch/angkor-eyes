@@ -6,6 +6,8 @@
 # ==============================================================================
 set -e
 
+INSTALL_DIR="/opt/angkor-eyes"
+
 echo "=========================================================="
 echo "⚡ [ANGKOR EYES] Setting up Cloudflare Free HTTPS Tunnel..."
 echo "=========================================================="
@@ -48,11 +50,15 @@ sudo systemctl enable angkor-eyes-tunnel
 sudo systemctl restart angkor-eyes-tunnel
 
 echo "⏳ Waiting for Cloudflare edge connection to establish..."
-sleep 6
+for i in {1..12}; do
+    TUNNEL_URL=$(grep -oE "https://[a-zA-Z0-9-]+\.trycloudflare\.com" /var/log/angkor-eyes-tunnel.log | tail -n 1 || echo "")
+    if [ -n "$TUNNEL_URL" ]; then
+        break
+    fi
+    sleep 2
+done
 
-# 4. Extract and display public HTTPS URL
-TUNNEL_URL=$(grep -oE "https://[a-zA-Z0-9-]+\.trycloudflare\.com" /var/log/angkor-eyes-tunnel.log | tail -n 1 || echo "")
-
+# 4. Extract and display public HTTPS URL & sync into .env
 echo "=========================================================="
 if [ -n "$TUNNEL_URL" ]; then
     echo "🎉 FREE HTTPS TUNNEL IS LIVE 24/7 365!"
@@ -60,15 +66,34 @@ if [ -n "$TUNNEL_URL" ]; then
     echo "🔗 PUBLIC MINI APP HTTPS URL:"
     echo "   $TUNNEL_URL"
     echo ""
-    echo "👉 Set this in Telegram @BotFather:"
-    echo "   1. Send /mybots to @BotFather"
+
+    # Automatically persist WEB_APP_URL into backend/.env and .env
+    ENV_TARGETS=("$INSTALL_DIR/backend/.env" "$INSTALL_DIR/.env")
+    for ENV_FILE in "${ENV_TARGETS[@]}"; do
+        if [ -f "$ENV_FILE" ]; then
+            if grep -q "^WEB_APP_URL=" "$ENV_FILE"; then
+                sudo sed -i "s|^WEB_APP_URL=.*|WEB_APP_URL=${TUNNEL_URL}|" "$ENV_FILE"
+            else
+                echo "WEB_APP_URL=${TUNNEL_URL}" | sudo tee -a "$ENV_FILE" > /dev/null
+            fi
+            echo "✅ Synced WEB_APP_URL=${TUNNEL_URL} into $(basename $ENV_FILE)"
+        fi
+    done
+
+    # Restart angkor-eyes so Telegram Bot picks up the live tunnel URL
+    echo "🔄 Reloading ANGKOR EYES service with live WebApp URL..."
+    sudo systemctl restart angkor-eyes || true
+
+    echo "----------------------------------------------------------"
+    echo "👉 Set this in Telegram @BotFather (Takes only 30 seconds):"
+    echo "   1. Send /mybots to @BotFather in Telegram"
     echo "   2. Choose your Angkor Eyes bot"
     echo "   3. Bot Settings -> Menu Button -> Configure menu button"
     echo "   4. Paste: $TUNNEL_URL"
     echo "=========================================================="
 else
     echo "⚠️ Tunnel service started. Reading logs..."
-    tail -n 15 /var/log/angkor-eyes-tunnel.log
+    tail -n 20 /var/log/angkor-eyes-tunnel.log
     echo ""
     echo "Run: grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /var/log/angkor-eyes-tunnel.log | tail -n 1"
 fi

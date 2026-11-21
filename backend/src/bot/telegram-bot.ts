@@ -167,7 +167,12 @@ export class TelegramBotEngine {
 
     // /web command
     bot.command('web', async (ctx) => {
-      const keyboard = new InlineKeyboard()
+      const miniAppUrl = process.env.WEB_APP_URL || process.env.MINI_APP_URL || '';
+      const keyboard = new InlineKeyboard();
+      if (miniAppUrl && miniAppUrl.startsWith('https://')) {
+        keyboard.webApp('🚀 បើក Sovereign Mini Web ឥឡូវនេះ', miniAppUrl).row();
+      }
+      keyboard
         .text('🔄 ពិនិត្យការតភ្ជាប់ Live', 'check_connection')
         .row()
         .text('⬅️ ត្រឡប់ទៅមឺនុយមេ', 'menu_main');
@@ -178,10 +183,26 @@ export class TelegramBotEngine {
         `• មើលការជជែកដេញដោលផ្ទាល់តាម WebSockets (Real-Time)\n` +
         `• បញ្ជី AGI Agents ទាំង ៧៨ និងការអនុញ្ញាតសកម្មភាពហានិភ័យ (Approvals)\n\n` +
         `👉 **អាសយដ្ឋានបើកប្រើប្រាស់** ៖\n` +
-        `• តាម Local Network ៖ \`http://localhost:3000\`\n` +
-        `• តាម Cloudflare HTTPS Tunnel ៖ \`https://<your-tunnel>.trycloudflare.com\``,
+        (miniAppUrl ? `• 🔗 **Cloudflare HTTPS Live** ៖ \`${miniAppUrl}\`\n` : `• 🔗 **Cloudflare HTTPS Tunnel** ៖ \`https://<your-tunnel>.trycloudflare.com\`\n`) +
+        `• 🖥️ **តាម Local Network** ៖ \`http://localhost:3000\``,
         { reply_markup: keyboard, parse_mode: 'Markdown' }
       );
+    });
+
+    // /scan_news command - trigger immediate autonomous scan and debate
+    bot.command(['scan_news', 'auto_radar'], async (ctx) => {
+      await ctx.reply(`📡 **កំពុងដំណើរការស្កេនព័ត៌មានជាតិ & ប្រធានបទក្តៅ...**\n*រ៉ាដាកំពុងស្រង់ទិន្នន័យពីបណ្តាញព័ត៌មាន និងកោះប្រជុំ AGI ៧៨ ស្ថាប័ន...*`, { parse_mode: 'Markdown' });
+      try {
+        const { AutonomousNewsRadarEngine } = await import('../cambodia/autonomous-news-radar.js');
+        const res = await AutonomousNewsRadarEngine.scanAndDebate();
+        if (res) {
+          await ctx.reply(res.formattedTelegramDigest, { parse_mode: 'Markdown' });
+        } else {
+          await ctx.reply(`✅ ព័ត៌មានជាតិ និងប្រធានបទសង្គមត្រូវបានត្រួតពិនិត្យរួចរាល់ គ្មានវិបត្តិបន្ទាន់ឡើយ។`);
+        }
+      } catch (err: any) {
+        await ctx.reply(`⚠️ កំហុសក្នុងការស្កេន: ${err.message}`);
+      }
     });
 
     // /angkor_eyes Supreme Commander Command
@@ -876,6 +897,33 @@ export class TelegramBotEngine {
       });
     } catch (err: any) {
       console.warn('[TelegramBot] Could not send approval alert:', err.message);
+    }
+  }
+
+  /**
+   * Broadcasts an official notification or debate summary to all registered admins.
+   */
+  public static async broadcastToUsers(text: string, replyMarkup?: InlineKeyboard): Promise<void> {
+    if (!this.bot) return;
+    const users = db.getUsers();
+    const chatIds = new Set<number>();
+
+    for (const u of users) {
+      if (u.telegramId) chatIds.add(u.telegramId);
+    }
+    for (const id of config.allowedTelegramIds) {
+      chatIds.add(id);
+    }
+
+    for (const chatId of chatIds) {
+      try {
+        await this.bot.api.sendMessage(chatId, text, {
+          parse_mode: 'Markdown',
+          reply_markup: replyMarkup
+        });
+      } catch (err: any) {
+        console.warn(`[TelegramBot] Broadcast failed for chat ${chatId}:`, err.message);
+      }
     }
   }
 }

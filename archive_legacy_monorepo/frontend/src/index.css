@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Khmer-first typography: Noto Sans Khmer needs generous line-height. */
+:root { color-scheme: light dark; }
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Noto Sans Khmer', system-ui, sans-serif;
+  line-height: 1.8; /* Khmer vowels/signs need extra vertical space */
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { line-height: 1.6; }
+* { scrollbar-width: thin; }
