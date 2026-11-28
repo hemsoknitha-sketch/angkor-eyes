@@ -193,7 +193,7 @@ export class LLMGateway {
       list.push('huggingface');
     }
 
-    list.push('ollama');
+    if (process.env.ENABLE_OLLAMA === 'true' || model.startsWith('ollama')) list.push('ollama');
     list.push('simulation');
     return list;
   }

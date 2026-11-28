@@ -1092,10 +1092,10 @@ export class TelegramBotEngine {
     const chatIds = new Set<number>();
 
     for (const u of users) {
-      if (u.telegramId) chatIds.add(u.telegramId);
+      if (u.telegramId && u.telegramId !== 123456789) chatIds.add(u.telegramId);
     }
     for (const id of config.allowedTelegramIds) {
-      chatIds.add(id);
+      if (id && id !== 123456789) chatIds.add(id);
     }
 
     for (const chatId of chatIds) {

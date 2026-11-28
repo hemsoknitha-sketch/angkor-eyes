@@ -1,48 +1,14 @@
 #!/bin/bash
-# ==============================================================================
-# 🇰🇭 ANGKOR EYES - ONE-COMMAND AUTO VPS UPDATER (ZERO DOWNTIME HOT RESTART)
-# Repository: https://github.com/hemsoknitha-sketch/angkor-eyes.git
-# ==============================================================================
 set -e
-
-INSTALL_DIR="/opt/angkor-eyes"
-
-if [ -d "$INSTALL_DIR" ]; then
-    cd "$INSTALL_DIR"
-else
-    cd "$(dirname "$0")/.."
-fi
-
-echo "=========================================================="
-echo "🇰🇭 [ANGKOR EYES] Updating VPS to Latest Git Revision..."
-echo "=========================================================="
-
-# 1. Stash any untracked or local changes and pull origin main
-echo "📥 Pulling latest commits from GitHub..."
+cd /opt/angkor-eyes
 git fetch origin main
 git reset --hard origin/main
 chmod +x scripts/*.sh 2>/dev/null || true
-
-# 2. Update dependencies
-echo "📦 Updating backend dependencies..."
-sudo npm install -g tsx || true
-cd backend
-npm install --no-audit --no-fund
-
-# 3. Graceful Systemd Restart
-echo "🔄 Restarting systemd service angkor-eyes..."
+find node_modules -maxdepth 1 -name ".*" -type d -exec rm -rf {} + 2>/dev/null || true
+NODE_OPTIONS="--max-old-space-size=768" npm install --no-audit --no-fund
+NODE_OPTIONS="--max-old-space-size=768" npm run build
+sudo systemctl daemon-reload
 sudo systemctl restart angkor-eyes
-
-# 4. Wait & Verify Health Check
 sleep 3
-echo "----------------------------------------------------------"
-echo "🔍 Service Health & Status:"
-sudo systemctl status angkor-eyes --no-pager -n 10
-
-echo "----------------------------------------------------------"
-echo "📊 Memory & Swap Status:"
-free -h
-
-echo "----------------------------------------------------------"
-echo "✅ ANGKOR EYES updated and running live successfully!"
-echo "=========================================================="
+curl -s http://localhost:3000/health && echo ""
+sudo systemctl status angkor-eyes --no-pager -n 8
