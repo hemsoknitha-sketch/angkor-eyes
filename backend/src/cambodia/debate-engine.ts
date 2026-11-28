@@ -143,7 +143,7 @@ export class InterMinisterialDebateEngine {
       referenceCode: refCode,
       participatingAgents: participants,
       statements,
-      crossExaminationSummary,
+      crossExaminationSummary: crossExamSummary,
       jointResolution: resolutionText,
       formattedTelegramDigest: cleanText
     };
