@@ -976,12 +976,28 @@ export class TelegramBotEngine {
 
     // Photo / Document Inspection (e-KYC & Evidence Verification)
     bot.on('message:photo', async (ctx) => {
-      await ctx.reply('📷 *កំពុងត្រួតពិនិត្យរូបភាពឯកសារ (Analyzing Document & Anti-Fraud)...*', { parse_mode: 'Markdown' });
-      const kycResult = await VoiceVisionInspector.verifyCitizenKyc({
-        idCardPhotoBase64: 'sample_photo_received'
-      });
-      const badge = kycResult.status === 'approved' ? '✅' : '❌';
-      await ctx.reply(`${badge} **លទ្ធផលត្រួតពិនិត្យឯកសារ** ៖\n${kycResult.reason}`, { parse_mode: 'Markdown' });
+      await ctx.reply('📷 *កំពុងទាញ និងត្រួតពិនិត្យរូបភាពឯកសារ (Inspecting Document & Anti-Fraud)...*', { parse_mode: 'Markdown' });
+      try {
+        const photos = ctx.message.photo || [];
+        const bestPhoto = photos[photos.length - 1];
+        let b64 = '';
+        if (bestPhoto?.file_id && config.telegramBotToken) {
+          const fileInfo = await ctx.api.getFile(bestPhoto.file_id);
+          if (fileInfo.file_path) {
+            const url = `https://api.telegram.org/file/bot${config.telegramBotToken}/${fileInfo.file_path}`;
+            const resp = await fetch(url);
+            if (resp.ok) {
+              const ab = await resp.arrayBuffer();
+              b64 = Buffer.from(ab).toString('base64');
+            }
+          }
+        }
+        const kycResult = await VoiceVisionInspector.verifyCitizenKyc({ idCardPhotoBase64: b64 });
+        const badge = kycResult.status === 'approved' ? '✅' : kycResult.status === 'manual_review' ? '⚠️' : '❌';
+        await ctx.reply(`${badge} **លទ្ធផលត្រួតពិនិត្យឯកសារ (${kycResult.status.toUpperCase()})** ៖\n${kycResult.reason}`, { parse_mode: 'Markdown' });
+      } catch (err: any) {
+        await ctx.reply(`⚠️ កំហុសក្នុងការត្រួតពិនិត្យរូបភាព: ${err.message}`);
+      }
     });
   }
 

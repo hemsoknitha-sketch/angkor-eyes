@@ -1,5 +1,7 @@
 import { db } from '../db/index.js';
 import { runnerHub } from '../runner-hub/hub.js';
+import { ApprovalGate } from '../safety/approval-gate.js';
+import { CronScheduler } from '../scheduler/cron-scheduler.js';
 
 export interface RollbackSnapshot {
   id: string;
@@ -15,9 +17,6 @@ export interface RollbackSnapshot {
 export class GitRollbackController {
   private static snapshots: Map<string, RollbackSnapshot> = new Map();
 
-  /**
-   * Save a snapshot before performing any merge into main.
-   */
   public static recordPreMergeSnapshot(params: {
     projectId: string;
     branchName: string;
@@ -39,41 +38,72 @@ export class GitRollbackController {
     return snapshot;
   }
 
-  /**
-   * Rollback / Undo a merge: Reverts merge commit or resets to pre-merge commit.
-   */
-  public static async executeRollback(snapshotId: string): Promise<{ success: boolean; message: string }> {
+  public static async executeRollback(
+    snapshotId: string,
+    opts?: { approvalId?: string; currentCommitSha?: string; worktreePath?: string }
+  ): Promise<{ success: boolean; message: string; approvalId?: string }> {
     const snapshot = this.snapshots.get(snapshotId);
     if (!snapshot) {
       return { success: false, message: `Snapshot ${snapshotId} not found.` };
     }
 
+    const approvalId = opts?.approvalId;
+    if (approvalId) {
+      const approval = db.getApprovalById(approvalId);
+      if (!approval || approval.status !== 'approved') {
+        return {
+          success: false,
+          approvalId,
+          message: `Rollback requires approved status on approval ${approvalId} (current: ${approval?.status || 'missing'}).`,
+        };
+      }
+      const toctou = ApprovalGate.validateExecution(
+        approvalId,
+        opts?.currentCommitSha || approval.targetCommitSha
+      );
+      if (!toctou.valid) {
+        return {
+          success: false,
+          approvalId,
+          message: `Rollback aborted by TOCTOU gate: ${toctou.reason}`,
+        };
+      }
+    }
+
     try {
-      // Execute git rollback command via runner hub
       const res = await runnerHub.executeOnRunner({
-        action: 'EXEC_TOOL',
+        action: 'RESET_HARD',
         payload: {
-          command: `git reset --hard ${snapshot.preMergeCommitSha}`,
-          workingDir: '.'
+          commitSha: snapshot.preMergeCommitSha,
+          workingDir: opts?.worktreePath || '.',
+          worktreePath: opts?.worktreePath || '.'
         }
       });
 
       snapshot.status = 'rolled_back';
-      db.addAuditLog('GIT_ROLLBACK_EXECUTED', { snapshotId, preMergeCommitSha: snapshot.preMergeCommitSha });
+      db.addAuditLog('GIT_ROLLBACK_EXECUTED', {
+        snapshotId,
+        approvalId,
+        preMergeCommitSha: snapshot.preMergeCommitSha
+      });
+      CronScheduler.enqueueOutboxEvent('git_rollback_executed', {
+        snapshotId,
+        approvalId,
+        commitSha: snapshot.preMergeCommitSha
+      });
 
       return {
         success: true,
-        message: `Successfully rolled back to commit ${snapshot.preMergeCommitSha}. (Output: ${res.stdout || 'clean'})`
+        approvalId,
+        message: `Successfully rolled back to commit ${snapshot.preMergeCommitSha} (Approval: ${approvalId}). ${res?.stdout || ''}`.trim()
       };
     } catch (err: any) {
-      console.error('[GitRollback] Rollback error:', err);
-      return { success: false, message: `Rollback failed: ${err.message}` };
+      return { success: false, approvalId, message: `Rollback failed: ${err.message}` };
     }
   }
 
   public static listSnapshots(projectId?: string): RollbackSnapshot[] {
     const arr = Array.from(this.snapshots.values());
-    if (projectId) return arr.filter(s => s.projectId === projectId);
-    return arr;
+    return projectId ? arr.filter(s => s.projectId === projectId) : arr;
   }
 }

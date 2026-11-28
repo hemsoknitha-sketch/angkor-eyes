@@ -85,7 +85,7 @@ export class RunnerHub {
    * Send RPC command to a runner daemon.
    */
   public async executeOnRunner(command: {
-    action: 'CREATE_WORKTREE' | 'EXEC_TOOL' | 'GET_DIFF' | 'PUSH_BRANCH' | 'REMOVE_WORKTREE';
+    action: 'CREATE_WORKTREE' | 'EXEC_TOOL' | 'GET_DIFF' | 'PUSH_BRANCH' | 'REMOVE_WORKTREE' | 'READ_FILE' | 'WRITE_FILE' | 'SEARCH_CODE' | 'COMMIT_CHANGES' | 'RESET_HARD';
     payload: any;
   }): Promise<any> {
     const runnerEntries = Array.from(this.connectedRunners.entries());

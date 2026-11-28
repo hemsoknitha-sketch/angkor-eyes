@@ -450,6 +450,11 @@ export class HttpApiServer {
         return json(res);
       }
 
+      // 17.5. Outbox Queue Inspection
+      if (pathname === '/api/outbox' && req.method === 'GET') {
+        return json(CronScheduler.getOutboxEvents());
+      }
+
       // 18. Cron Scheduled Tasks
       if (pathname === '/api/schedule' && req.method === 'GET') {
         return json(CronScheduler.listJobs());
