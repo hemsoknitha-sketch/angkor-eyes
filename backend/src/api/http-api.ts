@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { config } from '../config/index.js';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { db } from '../db/index.js';
@@ -105,6 +108,57 @@ export class HttpApiServer {
       };
 
       // --- Routes ---
+
+      if (pathname === '/health' && req.method === 'GET') {
+        return json({
+          ok: true,
+          status: 'healthy',
+          killSwitch: EmergencyKillSwitch.isKillSwitchEngaged(),
+          uptimeSeconds: Math.floor(process.uptime())
+        });
+      }
+
+      if (
+        pathname.startsWith('/api/') &&
+        pathname !== '/api/auth/verify' &&
+        pathname !== '/api/debate' &&
+        req.method !== 'GET' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        const initData = req.headers['x-telegram-init-data'] as string | undefined;
+        const bearer = String(req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
+        const tokenOk = Boolean(bearer) && (bearer === config.jwtSecret || bearer === config.runnerToken);
+        const tgOk = TelegramBotEngine.validateTelegramInitData(initData).valid;
+        if (!tokenOk && !tgOk) {
+          return json({ error: 'Unauthorized: Valid Telegram Mini App initData or Bearer token required.' }, 401);
+        }
+      }
+
+      const webDistCandidates = [
+        path.resolve(process.cwd(), '../web/dist'),
+        path.resolve(process.cwd(), 'web/dist')
+      ];
+      const webDistDir = webDistCandidates.find(d => fs.existsSync(path.join(d, 'index.html')));
+      if (webDistDir && req.method === 'GET' && !pathname.startsWith('/api/')) {
+        const rel = pathname === '/' || pathname === '/mini-app' ? 'index.html' : pathname.replace(/^\/+/, '');
+        const resolved = path.resolve(webDistDir, rel);
+        if (resolved.startsWith(webDistDir)) {
+          const target = fs.existsSync(resolved) && fs.statSync(resolved).isFile()
+            ? resolved
+            : path.join(webDistDir, 'index.html');
+          const mime: Record<string, string> = {
+            '.html': 'text/html; charset=utf-8',
+            '.js': 'application/javascript; charset=utf-8',
+            '.css': 'text/css; charset=utf-8',
+            '.json': 'application/json',
+            '.svg': 'image/svg+xml',
+            '.png': 'image/png'
+          };
+          res.writeHead(200, { 'Content-Type': mime[path.extname(target).toLowerCase()] || 'application/octet-stream' });
+          res.end(fs.readFileSync(target));
+          return;
+        }
+      }
 
       // 0. Serve Sovereign Mini Web App Dashboard
       if ((pathname === '/' || pathname === '/mini-app' || pathname === '/index.html') && req.method === 'GET') {

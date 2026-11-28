@@ -1,3 +1,4 @@
+if (!process.env.NODE_ENV) process.env.NODE_ENV = 'test';
 export async function resolve(specifier, context, nextResolve) {
   try {
     return await nextResolve(specifier, context);

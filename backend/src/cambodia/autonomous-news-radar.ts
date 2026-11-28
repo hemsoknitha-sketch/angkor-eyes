@@ -53,7 +53,7 @@ export class AutonomousNewsRadarEngine {
     this.isScanning = true;
     try {
       console.log('[AutonomousNewsRadar] Fetching live institutional feeds...');
-      const articles = await LiveInstitutionalFeedEngine.fetchNationalFeeds();
+      const articles = await LiveInstitutionalFeedEngine.fetchNationalFeeds().catch(() => []);
 
       // Find breaking news articles
       const breakingKeywords = ['បង្ក្រាប', 'ឆបោក', 'ដីធ្លី', 'ចរាចរណ៍', 'ពន្ធ', 'អន្តរាគមន៍', 'កិច្ចប្រជុំ', 'សន្តិសុខ', 'តុលាការ', 'ពុករលួយ', 'គ្រោះថ្នាក់', 'ប្លង់', 'នគរបាល'];

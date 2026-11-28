@@ -19,7 +19,7 @@ git push origin main
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo 🔄 Detected divergent remote history. Synchronizing with authoritative push...
-    git push origin main --force
+    git pull --rebase origin main && git push origin main
 )
 
 if %ERRORLEVEL% NEQ 0 (

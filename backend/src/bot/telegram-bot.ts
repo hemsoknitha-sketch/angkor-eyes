@@ -529,7 +529,7 @@ export class TelegramBotEngine {
     });
 
     // /social_radar - Cambodian Social Debate & Viral Issues Radar
-    bot.command(['social_radar', 'debate'], async (ctx) => {
+    bot.command('social_radar', async (ctx) => {
       const query = ctx.match ? ctx.match.toString().trim() : '';
       const sampleTitle = query || 'ផ្ទុះការជជែកដេញដោលអំពីការអនុវត្តច្បាប់ចរាចរណ៍ និងការប្រឆាំងអំពើពុករលួយ';
       const sampleContent = 'ប្រជាពលរដ្ឋបានបញ្ចេញមតិរិះគន់ និងសំណូមពរឱ្យសមត្ថកិច្ចអនុវត្តច្បាប់ឱ្យបានស្មើភាពគ្នា គ្មានបក្ខពួកនិយម និងតម្លាភាព';
@@ -617,6 +617,18 @@ export class TelegramBotEngine {
         const role = data.replace('preset_', '');
         await ctx.answerCallbackQuery({ text: `បានបង្កើត Agent ${role} ជោគជ័យ!` });
         await ctx.reply(`🎉 បានបន្ថែម Agent ថ្មីជោគជ័យ! សូមពិនិត្យមើលក្នុង Mini Web Roster។`);
+        return;
+      }
+
+      if (data === 'check_connection') {
+        const liveUrl = TelegramBotEngine.getLiveWebAppUrl();
+        await ctx.answerCallbackQuery({ text: liveUrl ? `Live: ${liveUrl}` : 'Running in Local/Standby Mode' });
+        return;
+      }
+
+      if (data === 'cmd_ministries') {
+        await ctx.answerCallbackQuery();
+        await ctx.reply('Use /ministries or /menu to select any of the 28 ministries.');
         return;
       }
 
@@ -1002,16 +1014,21 @@ export class TelegramBotEngine {
   /**
    * Validates Telegram.WebApp.initData using HMAC-SHA256 signature verification.
    */
-  public static validateTelegramInitData(initDataRaw: string): { valid: boolean; user?: any } {
-    if (!config.telegramBotToken || !initDataRaw) {
-      // In development mode, allow mock user
-      return { valid: true, user: { id: config.allowedTelegramIds[0] || 123456789, first_name: 'Developer' } };
+  public static validateTelegramInitData(initDataRaw?: string): { valid: boolean; user?: any } {
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (!initDataRaw) {
+      return isDev
+        ? { valid: true, user: { id: config.allowedTelegramIds[0] || 123456789, first_name: 'Developer' } }
+        : { valid: false };
     }
-
+    if (!config.telegramBotToken) {
+      return isDev ? { valid: true, user: { id: 123456789, first_name: 'OfflineDev' } } : { valid: false };
+    }
     try {
       const params = new URLSearchParams(initDataRaw);
       const hash = params.get('hash');
-      if (!hash) return { valid: false };
+      const authDate = Number(params.get('auth_date') || '0');
+      if (!hash || (authDate && Date.now() / 1000 - authDate > 86400)) return { valid: false };
 
       params.delete('hash');
       const dataCheckString = Array.from(params.entries())
@@ -1022,11 +1039,16 @@ export class TelegramBotEngine {
       const secretKey = crypto.createHmac('sha256', 'WebAppData').update(config.telegramBotToken).digest();
       const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
-      if (calculatedHash === hash) {
-        const userJson = params.get('user');
-        return { valid: true, user: userJson ? JSON.parse(userJson) : undefined };
+      const a = Buffer.from(calculatedHash, 'hex');
+      const b = Buffer.from(hash, 'hex');
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return { valid: false };
+
+      const userJson = params.get('user');
+      const user = userJson ? JSON.parse(userJson) : undefined;
+      if (config.allowedTelegramIds.length > 0 && user?.id && !config.allowedTelegramIds.includes(Number(user.id))) {
+        return { valid: false };
       }
-      return { valid: false };
+      return { valid: true, user };
     } catch {
       return { valid: false };
     }

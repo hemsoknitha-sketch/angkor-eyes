@@ -1,3 +1,4 @@
+import { SelfHealingWatchdog } from './safety/self-healing-watchdog.js';
 import http from 'http';
 import { WebSocketServer } from 'ws';
 import { config } from './config/index.js';
@@ -57,10 +58,12 @@ async function bootstrap() {
   TelegramBotEngine.initialize();
   CronScheduler.initialize();
   AutonomousNewsRadarEngine.initialize(3);
+  SelfHealingWatchdog.startWatchdog(60000);
 
   // Graceful shutdown
   const shutdown = () => {
     console.log('\n[Shutdown] Stopping ANGKOR EYES Backend cleanly...');
+    SelfHealingWatchdog.stopWatchdog();
     server.close(() => {
       console.log('[Shutdown] Server stopped.');
       process.exit(0);

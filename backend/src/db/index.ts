@@ -251,7 +251,16 @@ export class Database {
       isLocked: false,
       createdAt: new Date().toISOString()
     };
-    this.data.rooms.push(mainRoom);
+    this.data.rooms.push(mainRoom, {
+      id: 'room-cabinet-council',
+      projectId: defaultProject.id,
+      name: '\u{1F3DB}\uFE0F Inter-Ministerial Cabinet (AGI Council)',
+      topic: 'National Breaking Deliberations',
+      memberAgentIds: [supremeAgent.id],
+      activeTurnQueue: [],
+      isLocked: false,
+      createdAt: new Date().toISOString()
+    });
 
     // Initial Welcome Message
     this.data.messages.push({
@@ -365,10 +374,25 @@ export class Database {
     return this.data.rooms;
   }
   public getRoomById(id: string): Room | undefined { return this.data.rooms.find(r => r.id === id); }
-  public createRoom(room: Omit<Room, 'id' | 'createdAt' | 'activeTurnQueue' | 'isLocked'>): Room {
+  public createRoom(room: {
+    id?: string;
+    projectId?: string;
+    name: string;
+    topic?: string;
+    topicId?: number;
+    memberAgentIds?: string[];
+  }): Room {
+    if (room.id) {
+      const existing = this.getRoomById(room.id);
+      if (existing) return existing;
+    }
     const newRoom: Room = {
-      ...room,
-      id: `room-${uuidv4().substring(0, 8)}`,
+      id: room.id || `room-${uuidv4().substring(0, 8)}`,
+      projectId: room.projectId || 'proj-angkor-core',
+      name: room.name,
+      topic: room.topic,
+      topicId: room.topicId,
+      memberAgentIds: room.memberAgentIds || [],
       activeTurnQueue: [],
       isLocked: false,
       createdAt: new Date().toISOString()
@@ -391,10 +415,28 @@ export class Database {
       .filter(m => m.roomId === roomId)
       .slice(-limit);
   }
-  public addMessage(msg: Omit<Message, 'id' | 'createdAt'>): Message {
+  public addMessage(msg: {
+    roomId: string;
+    senderType: 'human' | 'agent' | 'system';
+    senderId?: string;
+    senderName?: string;
+    agentId?: string;
+    agentName?: string;
+    content: string;
+    metadata?: Message['metadata'];
+  }): Message {
+    const resolvedId = msg.senderId || msg.agentId || 'system';
+    const resolvedName = msg.senderName || msg.agentName || 'AGI Agent';
     const newMsg: Message = {
-      ...msg,
       id: `msg-${uuidv4().substring(0, 10)}`,
+      roomId: msg.roomId,
+      senderType: msg.senderType,
+      senderId: resolvedId,
+      senderName: resolvedName,
+      agentId: msg.agentId || resolvedId,
+      agentName: msg.agentName || resolvedName,
+      content: msg.content,
+      metadata: msg.metadata,
       createdAt: new Date().toISOString()
     };
     this.data.messages.push(newMsg);
@@ -576,6 +618,19 @@ export class Database {
     }
     this.save();
     return lease;
+  }
+  public markStaleRunnersOffline(timeoutMs = 60000): number {
+    const now = Date.now();
+    let count = 0;
+    for (const r of this.data.runnerLeases) {
+      if (r.status === 'online' && now - new Date(r.lastHeartbeat).getTime() > timeoutMs) {
+        r.status = 'offline';
+        count++;
+        this.addAuditLog('RUNNER_OFFLINE_DETECTED', { runnerId: r.runnerId });
+      }
+    }
+    if (count > 0) this.save();
+    return count;
   }
   public getRunnerLeases(): RunnerLease[] {
     const now = Date.now();

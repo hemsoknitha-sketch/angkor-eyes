@@ -119,6 +119,7 @@ class ApiService {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(this.getTelegramWebApp()?.initData ? { 'x-telegram-init-data': this.getTelegramWebApp().initData } : {}),
         ...(options?.headers || {})
       }
     });

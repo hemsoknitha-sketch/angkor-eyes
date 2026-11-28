@@ -150,8 +150,18 @@ export const AGENT_PRESETS: AgentPreset[] = [
   ...OFFICIAL_PRESETS.filter(p => p.command !== '/angkor_eyes')
 ];
 
+const COMMAND_ALIASES: Record<string, string> = {
+  '/justice': '/moj',
+  '/finance': '/mef',
+  '/defence': '/mod',
+  '/defense': '/mod',
+  '/land': '/mlmupc',
+  '/sihanoukville': '/preahsihanouk'
+};
+
 export function findAgentPresetByCommand(command: string): AgentPreset | undefined {
-  const normalized = command.toLowerCase().trim();
+  const raw = command.toLowerCase().trim().split('@')[0];
+  const normalized = COMMAND_ALIASES[raw] || raw;
   return AGENT_PRESETS.find(p => p.command?.toLowerCase() === normalized) ||
          OFFICIAL_PRESETS.find(p => p.command?.toLowerCase() === normalized);
 }

@@ -259,11 +259,7 @@ export class LLMGateway {
       throw new Error(`Gemini API error ${res.status}: ${errorText}`);
     }
 
-    if (!res.ok) {
-      throw new Error(`Gemini API Error: ${res.status} ${await res.text()}`);
-    }
-
-    const data = await res.json();
+    const data: any = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
     const promptTokens = data.usageMetadata?.promptTokenCount || 150;
     const completionTokens = data.usageMetadata?.candidatesTokenCount || 80;
@@ -323,7 +319,7 @@ export class LLMGateway {
       throw new Error(`Anthropic API Error: ${res.status} ${await res.text()}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     const text = data.content?.[0]?.text || '';
     const promptTokens = data.usage?.input_tokens || 120;
     const completionTokens = data.usage?.output_tokens || 60;
@@ -361,7 +357,7 @@ export class LLMGateway {
       throw new Error(`OpenAI API Error: ${res.status} ${await res.text()}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     const text = data.choices?.[0]?.message?.content || '';
     const promptTokens = data.usage?.prompt_tokens || 100;
     const completionTokens = data.usage?.completion_tokens || 50;
@@ -394,7 +390,7 @@ export class LLMGateway {
       throw new Error(`Ollama Error: ${res.status}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     const text = data.message?.content || '';
 
     return {

@@ -85,5 +85,5 @@ export const config: AppConfig = {
   devModel: process.env.DEV_MODEL || 'gemini-2.5-pro',
   maxTurnsPerTrigger: parseInt(process.env.MAX_TURNS_PER_TRIGGER || '6', 10),
   autoApprovalMode: process.env.AUTO_APPROVAL_MODE === 'true',
-  dataPath: path.resolve(process.cwd(), process.env.DATA_PATH || './data'),
+  dataPath: path.resolve(process.cwd(), process.env.DATA_PATH || (process.env.NODE_ENV === 'test' ? './data/test_runtime' : './data')),
 };

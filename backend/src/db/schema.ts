@@ -61,6 +61,7 @@ export interface Room {
   id: string;
   projectId: string;
   name: string;
+  topic?: string;
   topicId?: number;
   memberAgentIds: string[];
   activeTurnQueue: string[]; // Agent IDs waiting to speak
@@ -94,6 +95,8 @@ export interface Message {
   senderType: 'human' | 'agent' | 'system';
   senderId: string;
   senderName: string;
+  agentId?: string;
+  agentName?: string;
   content: string;
   metadata?: MessageMetadata;
   createdAt: string;
@@ -171,6 +174,7 @@ export interface Task {
   currentStep: number;
   retryCount: number;
   maxRetries: number;
+  error?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -44,6 +44,24 @@ export class LiveInstitutionalFeedEngine {
   /**
    * Fetches real live news articles for a specific AGI agent in real time.
    */
+  public static async fetchNationalFeeds(): Promise<LiveInstitutionalArticle[]> {
+    const coreAgencies = ['/interior', '/moj', '/mef', '/police', '/mlmupc', '/mptc'];
+    const results = await Promise.allSettled(coreAgencies.map(cmd => this.fetchLiveArticles(cmd)));
+    const merged: LiveInstitutionalArticle[] = [];
+    const seen = new Set<string>();
+    for (const res of results) {
+      if (res.status === 'fulfilled') {
+        for (const item of res.value) {
+          if (!seen.has(item.title)) {
+            seen.add(item.title);
+            merged.push(item);
+          }
+        }
+      }
+    }
+    return merged;
+  }
+
   public static async fetchLiveArticles(agentCommand: string): Promise<LiveInstitutionalArticle[]> {
     const cmdNormalized = agentCommand.toLowerCase().startsWith('/') ? agentCommand.toLowerCase() : `/${agentCommand.toLowerCase()}`;
     const now = Date.now();

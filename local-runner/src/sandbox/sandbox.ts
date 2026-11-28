@@ -1,5 +1,6 @@
-import { exec } from 'child_process';
-import path from 'path';
+import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { runnerConfig } from '../config/index.js';
 
 export interface CommandExecutionResult {
@@ -9,98 +10,103 @@ export interface CommandExecutionResult {
   durationMs: number;
 }
 
+const BLOCKED_SHELL_METACHARS = /[;&|`$><\r\n]/;
+
+function tokenizeArgv(cmdLine: string): string[] {
+  const args: string[] = [];
+  const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(cmdLine)) !== null) {
+    args.push(match[1] ?? match[2] ?? match[0]);
+  }
+  return args;
+}
+
 export class SandboxedExecutor {
-  /**
-   * Verify that path is strictly within the allowed workspace boundary.
-   */
   public static validatePath(targetPath: string): { valid: boolean; resolvedPath: string; error?: string } {
     const resolved = path.resolve(targetPath);
-    const inWorktree = resolved.startsWith(runnerConfig.worktreeBaseDir);
-    const inRepo = resolved.startsWith(runnerConfig.repoRoot);
+    const realTarget = fs.existsSync(resolved) ? fs.realpathSync(resolved) : resolved;
+    const worktreeRoot = fs.existsSync(runnerConfig.worktreeBaseDir)
+      ? fs.realpathSync(runnerConfig.worktreeBaseDir)
+      : path.resolve(runnerConfig.worktreeBaseDir);
+    const repoRoot = fs.existsSync(runnerConfig.repoRoot)
+      ? fs.realpathSync(runnerConfig.repoRoot)
+      : path.resolve(runnerConfig.repoRoot);
 
-    if (!inWorktree && !inRepo) {
+    const isInside = (child: string, parent: string) =>
+      child === parent || child.startsWith(parent + path.sep);
+
+    if (!isInside(realTarget, worktreeRoot) && !isInside(realTarget, repoRoot)) {
       return {
         valid: false,
-        resolvedPath: resolved,
-        error: `Path traversal blocked: ${resolved} is outside allowed directories (${runnerConfig.worktreeBaseDir})`
+        resolvedPath: realTarget,
+        error: `Path traversal blocked: ${realTarget} is outside allowed workspace.`
       };
     }
-
-    return { valid: true, resolvedPath: resolved };
+    return { valid: true, resolvedPath: realTarget };
   }
 
-  /**
-   * Run command with strict binary allowlist, timeout, and path boundary.
-   */
   public static async executeCommand(params: {
     command: string;
     workingDir: string;
     timeoutMs?: number;
   }): Promise<CommandExecutionResult> {
     const startTime = Date.now();
-
-    // 1. Path check
     const pathCheck = this.validatePath(params.workingDir);
     if (!pathCheck.valid) {
-      return {
-        exitCode: 1,
-        stdout: '',
-        stderr: pathCheck.error || 'Path validation failed',
-        durationMs: Date.now() - startTime
-      };
+      return { exitCode: 1, stdout: '', stderr: pathCheck.error || 'Invalid path', durationMs: Date.now() - startTime };
     }
 
-    // 2. Binary Allowlist check
     const trimmed = params.command.trim();
-    const binary = trimmed.split(/[\s"']+/)[0].toLowerCase();
-    const cleanBinary = path.basename(binary).replace(/\.exe$/i, '');
-
-    const isAllowed = runnerConfig.allowedCommands.includes(cleanBinary);
-    if (!isAllowed) {
+    if (!trimmed || BLOCKED_SHELL_METACHARS.test(trimmed)) {
       return {
         exitCode: 1,
         stdout: '',
-        stderr: `Security Policy Violation: Command '${cleanBinary}' is not in the allowed runner whitelist.`,
+        stderr: 'Security Policy Violation: Shell chaining, redirection, or empty command blocked.',
         durationMs: Date.now() - startTime
       };
     }
 
-    // 3. Reject high-risk shell patterns
-    if (/[;&|`$><]/.test(trimmed) && /(?:rm\s+-rf|mkfs|dd|del\s+\/s|curl\s+.*\|\s*sh)/i.test(trimmed)) {
+    const argv = tokenizeArgv(trimmed);
+    const cleanBinary = path.basename(argv[0]).replace(/\.(exe|cmd|bat)$/i, '').toLowerCase();
+
+    if (!runnerConfig.allowedCommands.includes(cleanBinary)) {
       return {
         exitCode: 1,
         stdout: '',
-        stderr: 'Security Policy Violation: Dangerous command chaining pattern detected.',
+        stderr: `Security Policy Violation: Command '${cleanBinary}' is not allowlisted.`,
         durationMs: Date.now() - startTime
       };
     }
 
-    // 4. Controlled Execution
+    if (cleanBinary === 'git' && argv.some(a => a.includes('hooksPath') || a.includes('upload-pack'))) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Security Policy Violation: Git hook override blocked.',
+        durationMs: Date.now() - startTime
+      };
+    }
+
     return new Promise((resolve) => {
       const timeout = params.timeoutMs || runnerConfig.commandTimeoutMs;
+      const isWin = process.platform === 'win32' && ['npm', 'pnpm', 'yarn', 'npx', 'vitest'].includes(cleanBinary);
+      const binToRun = isWin ? `${cleanBinary}.cmd` : cleanBinary;
 
-      exec(trimmed, {
-        cwd: pathCheck.resolvedPath,
-        timeout,
-        maxBuffer: 10 * 1024 * 1024 // 10MB buffer
-      }, (error, stdout, stderr) => {
-        const durationMs = Date.now() - startTime;
-        if (error) {
-          resolve({
-            exitCode: error.code || 1,
-            stdout: stdout.toString(),
-            stderr: stderr.toString() || error.message,
-            durationMs
-          });
-        } else {
-          resolve({
-            exitCode: 0,
-            stdout: stdout.toString(),
-            stderr: stderr.toString(),
-            durationMs
-          });
+      execFile(
+        binToRun,
+        argv.slice(1),
+        { cwd: pathCheck.resolvedPath, timeout, maxBuffer: 10 * 1024 * 1024, shell: false },
+        (error, stdout, stderr) => {
+          const durationMs = Date.now() - startTime;
+          if (error) {
+            const code = typeof (error as any).code === 'number' ? (error as any).code : 1;
+            resolve({ exitCode: code, stdout: String(stdout), stderr: String(stderr) || error.message, durationMs });
+          } else {
+            resolve({ exitCode: 0, stdout: String(stdout), stderr: String(stderr), durationMs });
+          }
         }
-      });
+      );
     });
   }
 }
