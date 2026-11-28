@@ -86,6 +86,7 @@ export class LLMCircuitBreaker {
 }
 
 export class LLMGateway {
+  private static hfDisabledDueTo403 = false;
   /**
    * Route and execute LLM calls with secret redaction, safety hierarchy, multimodal support, and automatic circuit breaker failover.
    */
@@ -176,7 +177,7 @@ export class LLMGateway {
 
     // Prioritize Free Hugging Face open-weight models if requested or configured
     if (config.hfToken || model.includes('deepseek') || model.includes('qwen')) {
-      list.push('huggingface');
+      if (!LLMGateway.hfDisabledDueTo403) list.push('huggingface');
     }
 
     if (config.geminiApiKey || config.geminiApiKeys.length > 0) {
@@ -190,7 +191,7 @@ export class LLMGateway {
     }
 
     if (config.hfToken && !list.includes('huggingface')) {
-      list.push('huggingface');
+      if (!LLMGateway.hfDisabledDueTo403) list.push('huggingface');
     }
 
     if (process.env.ENABLE_OLLAMA === 'true' || model.startsWith('ollama')) list.push('ollama');

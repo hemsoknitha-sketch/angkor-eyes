@@ -19,6 +19,40 @@ import { CrisisMomentumDetector } from '../cambodia/crisis-velocity-detector.js'
 import { AutonomousCitizenCommentResponder } from '../cambodia/autonomous-citizen-responder.js';
 import { InterMinisterialDebateEngine } from '../cambodia/debate-engine.js';
 
+function splitTelegramMessage(text: string, maxLen = 3500): string[] {
+  const clean = (text || '').trim();
+  if (!clean) return ['(Empty message)'];
+  if (clean.length <= maxLen) return [clean];
+  const chunks: string[] = [];
+  let cursor = 0;
+  while (cursor < clean.length) {
+    let end = Math.min(cursor + maxLen, clean.length);
+    if (end < clean.length) {
+      const newlineIdx = clean.lastIndexOf('\n', end);
+      if (newlineIdx > cursor + 800) end = newlineIdx;
+    }
+    chunks.push(clean.slice(cursor, end).trim());
+    cursor = end;
+  }
+  return chunks.filter(Boolean);
+}
+
+async function sendSafeTelegramText(api: any, chatId: number | string, text: string, extra?: Record<string, any>): Promise<void> {
+  const parts = splitTelegramMessage(text, 3500);
+  for (let i = 0; i < parts.length; i++) {
+    const opts = i === 0 && extra ? extra : undefined;
+    try {
+      await api.sendMessage(chatId, parts[i], opts);
+    } catch (err: any) {
+      if (opts?.parse_mode) {
+        await api.sendMessage(chatId, parts[i]).catch(() => {});
+      } else {
+        console.warn('[TelegramBot] sendSafeTelegramText warning:', err?.message || err);
+      }
+    }
+  }
+}
+
 export class TelegramBotEngine {
   private static bot: Bot | null = null;
   private static processedUpdateIds: Set<number> = new Set();
@@ -204,7 +238,7 @@ export class TelegramBotEngine {
           topic: query,
           initiatedBy: ctx.from?.first_name || 'Super Admin'
         });
-        await ctx.reply(result.formattedTelegramDigest, { parse_mode: 'Markdown' });
+        await sendSafeTelegramText(ctx.api, ctx.chat!.id, result.formattedTelegramDigest, { parse_mode: "Markdown" });
       } catch (err: any) {
         await ctx.reply(`⚠️ កំហុសក្នុងដំណើរការប្រជុំ: ${err.message}`);
       }
@@ -305,12 +339,12 @@ export class TelegramBotEngine {
 
     // /scan_news command - trigger immediate autonomous scan and debate
     bot.command(['scan_news', 'auto_radar'], async (ctx) => {
-      await ctx.reply(`📡 **កំពុងដំណើរការស្កេនព័ត៌មានជាតិ & ប្រធានបទក្តៅ...**\n*រ៉ាដាកំពុងស្រង់ទិន្នន័យពីបណ្តាញព័ត៌មាន និងកោះប្រជុំ AGI ៧៨ ស្ថាប័ន...*`, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, `📡 **កំពុងដំណើរការស្កេនព័ត៌មានជាតិ & ប្រធានបទក្តៅ...**\n*រ៉ាដាកំពុងស្រង់ទិន្នន័យពីបណ្តាញព័ត៌មាន និងកោះប្រជុំ AGI ៧៨ ស្ថាប័ន...*`, { parse_mode: "Markdown" });
       try {
         const { AutonomousNewsRadarEngine } = await import('../cambodia/autonomous-news-radar.js');
         const res = await AutonomousNewsRadarEngine.scanAndDebate();
         if (res) {
-          await ctx.reply(res.formattedTelegramDigest, { parse_mode: 'Markdown' });
+          await sendSafeTelegramText(ctx.api, ctx.chat!.id, res.formattedTelegramDigest, { parse_mode: "Markdown" });
         } else {
           await ctx.reply(`✅ ព័ត៌មានជាតិ និងប្រធានបទសង្គមត្រូវបានត្រួតពិនិត្យរួចរាល់ គ្មានវិបត្តិបន្ទាន់ឡើយ។`);
         }
@@ -411,7 +445,7 @@ export class TelegramBotEngine {
       text += `• \`/phnompenh\`, \`/siemreap\`, \`/preahsihanouk\`, \`/kandal\`, \`/battambang\`, ... (សរុប ២៥ រាជធានី-ខេត្ត)\n\n`;
       text += `💡 *ចុចលើពាក្យបញ្ជាណាមួយខាងលើ រួចសួរសំណួរ ឬបញ្ជាការងារបានភ្លាមៗ!*`;
 
-      await ctx.reply(text, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, text, { parse_mode: "Markdown" });
     });
 
     // /newagent command
@@ -495,19 +529,19 @@ export class TelegramBotEngine {
       text += `\n💻 **Local Runner Daemons**: ${onlineRunners.length} Online\n`;
       text += `🔒 **Pending Approvals**: ${db.getApprovalRequests('pending').length}\n`;
 
-      await ctx.reply(text, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, text, { parse_mode: "Markdown" });
     });
 
     // /daily_report - Master Daily Executive Report to Super Admin
     bot.command(['daily_report', 'report', 'digest'], async (ctx) => {
       const report = DailyExecutiveReportEngine.generateDailyReport();
-      await ctx.reply(report.formattedKhmerReport, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, report.formattedKhmerReport, { parse_mode: "Markdown" });
     });
 
     // /macro - Macroeconomic & Central Bank (NBC/MEF) Indicators
     bot.command('macro', async (ctx) => {
       const briefing = CambodiaMacroIntelligence.getFormattedMacroBriefing();
-      await ctx.reply(briefing, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, briefing, { parse_mode: "Markdown" });
     });
 
     // /hotzones - Civic complaint clustering radar across Cambodia
@@ -518,14 +552,14 @@ export class TelegramBotEngine {
         { locationText: 'ខណ្ឌទួលគោក', topic: 'បញ្ហាប្រព័ន្ធលូបង្ហូរទឹកភ្លៀង' }
       ];
       const cluster = CivicGeocodingAndHotzoneRadar.clusterHotzones(sampleReports);
-      await ctx.reply(cluster.khmerAlertMessage, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, cluster.khmerAlertMessage, { parse_mode: "Markdown" });
     });
 
     // /verify_id - e-KYC & Fraud Vision Inspection
     bot.command(['verify_id', 'kyc'], async (ctx) => {
       const guidance = `🛡️ **មជ្ឈមណ្ឌលផ្ទៀងផ្ទាត់អត្តសញ្ញាណប័ណ្ណ & e-KYC (Ministry of Interior & Police)**\n\n` +
         `សូមផ្ញើរូបថតអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ (ID Card) ឬលិខិតឆ្លងដែនផ្លូវការ ដើម្បីឱ្យប្រព័ន្ធ AI ពិនិត្យភាពត្រឹមត្រូវ ប្រឆាំងការក្លែងបន្លំ និង Deepfake ៕`;
-      await ctx.reply(guidance, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, guidance, { parse_mode: "Markdown" });
     });
 
     // /social_radar - Cambodian Social Debate & Viral Issues Radar
@@ -542,7 +576,7 @@ export class TelegramBotEngine {
       msg += `⚖️ **មូលដ្ឋានច្បាប់ការពារ** ៖ ${analysis.legalAnchor}\n\n`;
       msg += `📝 **ចំណាត់ការបន្ទាន់របស់ស្ថាប័ន** ៖\n${analysis.actionBriefKhmer}`;
 
-      await ctx.reply(msg, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, msg, { parse_mode: "Markdown" });
     });
 
     // /crisis_check - Hawkes Process Velocity & Urgent Press Clarification
@@ -565,7 +599,7 @@ export class TelegramBotEngine {
       msg += `🚨 **មូលហេតុបន្ទាន់** ៖ ${sampleCrisis.urgencyKhmerReason}\n\n`;
       msg += `📄 **ព្រាងសេចក្តីបំភ្លឺផ្លូវការ (Press Clarification Draft)** ៖\n${sampleCrisis.pressClarificationDraftKhmer}`;
 
-      await ctx.reply(msg, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, msg, { parse_mode: "Markdown" });
     });
 
     // /inquiry - Autonomous Citizen Inquiry Responder
@@ -584,7 +618,7 @@ export class TelegramBotEngine {
       msg += `🎫 **លេខកូដសំបុត្រ (Ticket ID)** ៖ \`${response.ticketId}\` | 📞 **Hotline** ៖ **${response.hotlineNumber}**\n\n`;
       msg += `💬 **ចម្លើយផ្លូវការ** ៖\n${response.officialPublicReplyKhmer}`;
 
-      await ctx.reply(msg, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, msg, { parse_mode: "Markdown" });
     });
 
     // Callback queries for inline buttons
@@ -773,7 +807,7 @@ export class TelegramBotEngine {
             msg += `🏛️ **${res.agentName} — សេចក្តីថ្លែងការណ៍ & ការប្រឹក្សាផ្លូវការ**\n\n`;
           }
           msg += res.officialContent;
-          await ctx.reply(msg, { parse_mode: 'Markdown' });
+          await sendSafeTelegramText(ctx.api, ctx.chat!.id, msg, { parse_mode: "Markdown" });
         }
         return;
       }
@@ -789,12 +823,12 @@ export class TelegramBotEngine {
         };
         const topic = topicMap[topicKey] || 'វិធានការសន្តិសុខ និងសេវាសាធារណៈជូនប្រជាពលរដ្ឋ';
         await ctx.answerCallbackQuery({ text: 'កំពុងកោះប្រជុំបន្ទាន់ AGI...' });
-        await ctx.reply(`⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI អន្តរក្រសួង...**\nប្រធានបទ ៖ «*${topic}*»\n*កំពុងស្រង់មាត្រាច្បាប់ និងសម្របសម្រួលចម្លើយ...*`, { parse_mode: 'Markdown' });
+        await sendSafeTelegramText(ctx.api, ctx.chat!.id, `⚡ **កំពុងកោះប្រជុំបន្ទាន់ AGI អន្តរក្រសួង...**\nប្រធានបទ ៖ «*${topic}*»\n*កំពុងស្រង់មាត្រាច្បាប់ និងសម្របសម្រួលចម្លើយ...*`, { parse_mode: "Markdown" });
         const res = await InterMinisterialDebateEngine.deliberateOnTopic({
           topic,
           initiatedBy: ctx.from?.first_name || 'Super Admin'
         });
-        await ctx.reply(res.formattedTelegramDigest, { parse_mode: 'Markdown' });
+        await sendSafeTelegramText(ctx.api, ctx.chat!.id, res.formattedTelegramDigest, { parse_mode: "Markdown" });
         return;
       }
 
@@ -897,7 +931,7 @@ export class TelegramBotEngine {
               replyMsg += `🛡️ **កម្រិតភាពជឿជាក់**: ${spokespersonRes.credibilityBadge}\n`;
             }
 
-            await ctx.reply(replyMsg, { parse_mode: 'Markdown' });
+            await sendSafeTelegramText(ctx.api, ctx.chat!.id, replyMsg, { parse_mode: "Markdown" });
 
             // Record into room chat history
             db.addMessage({
@@ -908,7 +942,7 @@ export class TelegramBotEngine {
               senderType: 'agent'
             });
           } catch (err: any) {
-            await ctx.reply(`⚠️ កំហុសក្នុងដំណើរការ: ${err.message}`);
+            await sendSafeTelegramText(ctx.api, ctx.chat!.id, `⚠️ កំហុសក្នុងដំណើរការ: ${err.message}`);
           }
           return;
         }
@@ -920,11 +954,11 @@ export class TelegramBotEngine {
       // Citizen Grievance Mediation (High Empathy Calming Response)
       const mediation = VoiceVisionInspector.mediateCitizenFrustration(text);
       if (mediation.isHighGrievance && mediation.empathyResponseKhmer) {
-        await ctx.reply(`🤝 ${mediation.empathyResponseKhmer}`, { parse_mode: 'Markdown' });
+        await ctx.reply(`🤝 ${mediation.empathyResponseKhmer}`, { parse_mode: "Markdown" });
       }
 
       // Default: 1-on-1 with Supreme Controller AGI ANGKOR EYES
-      await ctx.reply(`👑 **AGI ANGKOR EYES (Supreme Command)** កំពុងទទួលការងារ និងបំបែក Task Tree...`, { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, `👑 **AGI ANGKOR EYES (Supreme Command)** កំពុងទទួលការងារ និងបំបែក Task Tree...`, { parse_mode: "Markdown" });
 
       try {
         await TurnCoordinator.handleMessage({
@@ -941,7 +975,7 @@ export class TelegramBotEngine {
 
     // Voice Message (Voice Notes) - Speech-to-Text in Khmer
     bot.on('message:voice', async (ctx) => {
-      await ctx.reply('🎙️ *កំពុងស្តាប់ និងបំប្លែងសារសំឡេងជាអក្សរផ្លូវការ (Transcribing Khmer Voice)...*', { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, '🎙️ *កំពុងស្តាប់ និងបំប្លែងសារសំឡេងជាអក្សរផ្លូវការ (Transcribing Khmer Voice)...*', { parse_mode: "Markdown" });
       try {
         const file = await ctx.getFile();
         let transcribedText = 'សូមជម្រាបសួរ ខ្ញុំមានសំណើចង់ពិគ្រោះយោបល់ជាមួយតំណាងក្រសួងផ្លូវការ';
@@ -957,7 +991,7 @@ export class TelegramBotEngine {
             // fallback handled
           }
         }
-        await ctx.reply(`📝 **អត្ថបទបំប្លែងពីសំឡេង (Transcribed Text)** ៖\n"${transcribedText}" ៕`, { parse_mode: 'Markdown' });
+        await sendSafeTelegramText(ctx.api, ctx.chat!.id, `📝 **អត្ថបទបំប្លែងពីសំឡេង (Transcribed Text)** ៖\n"${transcribedText}" ៕`, { parse_mode: "Markdown" });
 
         // Forward to default TurnCoordinator / Spokesperson
         const rooms = db.getRooms();
@@ -976,7 +1010,7 @@ export class TelegramBotEngine {
 
     // Photo / Document Inspection (e-KYC & Evidence Verification)
     bot.on('message:photo', async (ctx) => {
-      await ctx.reply('📷 *កំពុងទាញ និងត្រួតពិនិត្យរូបភាពឯកសារ (Inspecting Document & Anti-Fraud)...*', { parse_mode: 'Markdown' });
+      await sendSafeTelegramText(ctx.api, ctx.chat!.id, '📷 *កំពុងទាញ និងត្រួតពិនិត្យរូបភាពឯកសារ (Inspecting Document & Anti-Fraud)...*', { parse_mode: "Markdown" });
       try {
         const photos = ctx.message.photo || [];
         const bestPhoto = photos[photos.length - 1];
@@ -994,7 +1028,7 @@ export class TelegramBotEngine {
         }
         const kycResult = await VoiceVisionInspector.verifyCitizenKyc({ idCardPhotoBase64: b64 });
         const badge = kycResult.status === 'approved' ? '✅' : kycResult.status === 'manual_review' ? '⚠️' : '❌';
-        await ctx.reply(`${badge} **លទ្ធផលត្រួតពិនិត្យឯកសារ (${kycResult.status.toUpperCase()})** ៖\n${kycResult.reason}`, { parse_mode: 'Markdown' });
+        await sendSafeTelegramText(ctx.api, ctx.chat!.id, `${badge} **លទ្ធផលត្រួតពិនិត្យឯកសារ (${kycResult.status.toUpperCase()})** ៖\n${kycResult.reason}`, { parse_mode: "Markdown" });
       } catch (err: any) {
         await ctx.reply(`⚠️ កំហុសក្នុងការត្រួតពិនិត្យរូបភាព: ${err.message}`);
       }
@@ -1017,6 +1051,10 @@ export class TelegramBotEngine {
       { command: 'web', description: '🌐 បើក Sovereign Mini Web App' },
       { command: 'status', description: '📊 ពិនិត្យសុខភាពប្រព័ន្ធ & ម៉ាស៊ីន VPS' }
     ]).catch(() => { });
+
+    bot.catch((err) => {
+      console.error('[TelegramBot] Caught Grammy error safely:', err.message || err);
+    });
 
     bot.start({
       onStart: (info) => {
